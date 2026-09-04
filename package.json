@@ -1,0 +1,9 @@
+{
+  "name": "friendslop",
+  "private": true,
+  "type": "module",
+  "description": "friendslop.wtf: static landing page plus a couple of Vercel functions for signups",
+  "dependencies": {
+    "@vercel/blob": "^2.8.0"
+  }
+}

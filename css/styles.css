@@ -438,6 +438,15 @@ p, li { max-width: 80ch; }
   outline-offset: 2px;
 }
 
+/* Honeypot: off-screen, bots fill it, people never see it */
+.hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
 .signup-status {
   margin-top: 10px;
   font-size: 14px;

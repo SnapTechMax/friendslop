@@ -19,7 +19,7 @@ Small devs make weird, chaotic, "made-with-my-friends" games all the time and mo
 
 ## Status
 
-Landing page only. No backend yet.
+Landing page with a working signup form. Nothing else yet.
 
 ## Running it
 
@@ -36,10 +36,30 @@ Then visit http://localhost:4173.
 - `index.html` — the landing page
 - `css/styles.css` — all styling. Loud on purpose, readable on purpose.
 - `js/main.js` — visitor counter, the ticking "bugs shipped as features" stat, and the signup form handler
+- `api/signup.js` — saves a signup to Vercel Blob
+- `api/signups.js` — exports the signups, admin key required
 
 ## Signup form
 
-The form in `index.html` posts JSON (`{ email, role }`) to whatever URL is in its `data-endpoint` attribute. It's empty right now, so the form tells people sign-ups aren't wired up yet. Point it at a form backend or your own endpoint when one exists.
+The form posts JSON (`{ email, role, website }`) to `/api/signup`, a Vercel function in `api/signup.js`. Each signup is stored as a private blob in the Vercel Blob store `friendslop-signups`, one file per email at `signups/<sha256 of the email>.json`, so signing up twice is a no-op. The `website` field is a hidden honeypot: if a bot fills it in, the function says thanks and saves nothing.
+
+To download the list, call `/api/signups` with the admin key. CSV by default, `?format=json` for JSON:
+
+```bash
+curl -H "Authorization: Bearer $SIGNUP_ADMIN_KEY" https://friendslop.wtf/api/signups -o signups.csv
+```
+
+The key is the `SIGNUP_ADMIN_KEY` environment variable on the Vercel project. `vercel env pull .env.local` copies it and the blob token into a local `.env.local`, which is gitignored.
+
+## Local development
+
+```bash
+npm install
+vercel env pull .env.local
+vercel dev
+```
+
+`vercel dev` serves the static site and runs the functions in `api/`.
 
 ## Style notes
 

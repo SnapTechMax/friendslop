@@ -162,7 +162,7 @@
 
     <center id="signup"><h3 class="section-title">Get in early</h3></center>
 
-    <form id="signup-form" class="signup" data-endpoint="">
+    <form id="signup-form" class="signup" data-endpoint="/api/signup">
       <p class="signup-blurb">
         Submissions and crew-finding are still being built [it's a small team, hi]. Drop your email and we'll tell you the second they open, plus send the best slop we find each week.
       </p>
@@ -173,6 +173,10 @@
           <option value="player">player looking for a crew</option>
           <option value="both">both, somehow</option>
         </select>
+      </label>
+      <label class="hp" aria-hidden="true">
+        Leave this empty
+        <input type="text" name="website" id="signup-website" tabindex="-1" autocomplete="off">
       </label>
       <label class="field">
         Email address

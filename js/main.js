@@ -24,15 +24,17 @@
     }, 2200);
   }
 
-  // Signup form. Set data-endpoint on the form to a URL that accepts JSON
-  // { email, role } and it will POST there. With no endpoint it says so.
+  // Signup form. POSTs JSON { email, role, website } to the form's data-endpoint
+  // (/api/signup in production). The server replies { ok, message }.
   var form = document.getElementById('signup-form');
   var status = document.getElementById('signup-status');
   if (form && status) {
+    var button = form.querySelector('button[type=submit]');
     form.addEventListener('submit', function (ev) {
       ev.preventDefault();
       var email = (document.getElementById('signup-email').value || '').trim();
       var role = document.getElementById('signup-role').value;
+      var hp = document.getElementById('signup-website');
       var endpoint = form.getAttribute('data-endpoint');
 
       if (!endpoint) {
@@ -41,16 +43,25 @@
       }
 
       status.textContent = 'Summoning...';
+      if (button) button.disabled = true;
+
       fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email, role: role })
+        body: JSON.stringify({ email: email, role: role, website: hp ? hp.value : '' })
       }).then(function (res) {
-        if (!res.ok) throw new Error('bad status ' + res.status);
-        status.textContent = 'Lobby summoned. Watch your inbox.';
-        form.reset();
+        return res.json().catch(function () { return { ok: res.ok }; });
+      }).then(function (data) {
+        if (data && data.ok) {
+          status.textContent = data.message || 'Lobby summoned. Watch your inbox.';
+          form.reset();
+        } else {
+          status.textContent = (data && data.message) || 'That did not work. Try again in a bit.';
+        }
       }).catch(function () {
         status.textContent = 'That did not work. Try again in a bit, or yell at us on socials.';
+      }).finally(function () {
+        if (button) button.disabled = false;
       });
     });
   }
