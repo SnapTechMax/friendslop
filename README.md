@@ -44,3 +44,22 @@ The form in `index.html` posts JSON (`{ email, role }`) to whatever URL is in it
 ## Style notes
 
 The look borrows from gamerbf.com: Comic Sans, a cream page over a magenta/cyan/yellow background, thick ridge and double borders, hard black shadows, slightly rotated cards, a marquee, a green-on-black "system notice" box, and a hit counter. The copy is deadpan but explains what the site actually does.
+
+## Deployment
+
+The site is hosted on Vercel, project `friendslop`. The GitHub repo is connected, so every push to `main` deploys to production. Preview deployments are created for other branches and pull requests.
+
+DNS lives at Namecheap and points at Vercel:
+
+| Type  | Host | Value                                  |
+| ----- | ---- | -------------------------------------- |
+| A     | @    | 216.198.79.1                           |
+| CNAME | www  | 2617a4284173be61.vercel-dns-017.com    |
+
+Vercel's older generic values (A `76.76.21.21`, CNAME `cname.vercel-dns.com`) also work. `www.friendslop.wtf` redirects to `friendslop.wtf`.
+
+Manual deploy from this folder, if ever needed:
+
+```bash
+vercel deploy --prod
+```
