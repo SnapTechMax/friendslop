@@ -44,23 +44,3 @@ The form in `index.html` posts JSON (`{ email, role }`) to whatever URL is in it
 ## Style notes
 
 The look borrows from gamerbf.com: Comic Sans, a cream page over a magenta/cyan/yellow background, thick ridge and double borders, hard black shadows, slightly rotated cards, a marquee, a green-on-black "system notice" box, and a hit counter. The copy is deadpan but explains what the site actually does.
-
-## Deployment
-
-The site is served by GitHub Pages from the `main` branch root. Every push to `main` redeploys it. The `CNAME` file pins the custom domain to `friendslop.wtf`.
-
-DNS lives at Namecheap. The records GitHub Pages needs:
-
-| Type  | Host | Value                   |
-| ----- | ---- | ----------------------- |
-| A     | @    | 185.199.108.153         |
-| A     | @    | 185.199.109.153         |
-| A     | @    | 185.199.110.153         |
-| A     | @    | 185.199.111.153         |
-| CNAME | www  | snaptechmax.github.io   |
-
-Once DNS resolves and GitHub has issued the certificate, turn on HTTPS enforcement:
-
-```bash
-gh api -X PUT repos/SnapTechMax/friendslop/pages -F https_enforced=true
-```
