@@ -42,6 +42,10 @@
     return Math.floor(s / 86400) + 'd ago';
   }
 
+  function minutesLeft(iso) {
+    return Math.max(1, Math.ceil((new Date(iso).getTime() - Date.now()) / 60000));
+  }
+
   function until(iso) {
     var s = Math.max(0, (new Date(iso).getTime() - Date.now()) / 1000);
     if (s < 3600) return Math.max(1, Math.floor(s / 60)) + 'm';
@@ -140,9 +144,10 @@
       actions.push(el('button', { type: 'button', class: 'cta cta-small cta-danger', text: 'Delete my call', onclick: function () { remove(c.id); } }));
     }
 
-    var article = el('article', { class: 'card crew' + (full ? ' crew-full' : '') }, [
+    var article = el('article', { class: 'card crew' + (full ? ' crew-full' : '') + (c.held ? ' crew-held' : '') }, [
       el('div', { class: 'crew-head' }, [
         el('span', { class: 'pill pill-when', text: when }),
+        c.held ? el('span', { class: 'pill pill-held', text: 'on hold · public in ' + minutesLeft(c.holdUntil) + ' min' }) : null,
         full ? el('span', { class: 'pill pill-full', text: 'probably full' }) : null,
         el('span', { class: 'when', text: 'posted ' + ago(c.createdAt) + ' · gone in ' + until(c.expiresAt) })
       ]),
@@ -166,8 +171,14 @@
 
   function load() {
     statusEl.textContent = 'Loading...';
-    return fetch('/api/crews', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (d) {
-      crews = (d && d.crews) || [];
+    var pub = fetch('/api/crews', { cache: 'no-store' }).then(function (r) { return r.json(); });
+    // Your own first call sits on a short hold; only you can see it until then.
+    var held = fetch('/api/crews?mine=1', { cache: 'no-store' }).then(function (r) { return r.json(); }).catch(function () { return { crews: [] }; });
+    return Promise.all([pub, held]).then(function (res) {
+      var held = (res[1] && res[1].crews) || [];
+      var seen = {};
+      held.forEach(function (c) { seen[c.id] = true; });
+      crews = held.concat(((res[0] && res[0].crews) || []).filter(function (c) { return !seen[c.id]; }));
       statusEl.textContent = '';
       render();
     }).catch(function () { statusEl.textContent = 'Could not load the board. Try refresh.'; });
@@ -247,7 +258,9 @@
           crews.unshift(d.crew);
           render();
           form.reset(); toggleOther(); contactHint();
-          formStatus.textContent = "It's up. Delete it when you're full.";
+          formStatus.textContent = d.held
+            ? "It's up for you. First call from a new poster gets a " + (d.holdMinutes || 15) + " minute hold before everyone else sees it [spam, sorry]. Later ones go up instantly."
+            : "It's up. Delete it when you're full.";
           listEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
           return;
         }

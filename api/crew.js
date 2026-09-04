@@ -4,13 +4,14 @@
 // POST   /api/crew                 (json) -> { ok, id, token, crew }   post a call
 // POST   /api/crew?action=in       { id } -> { ok, in, count }          toggle "I'm in"
 // POST   /api/crew?action=report   { id, reason, note? }               report a call
+// POST   /api/crew?action=release  { id }   with the admin key          end a first-post hold early
 // DELETE /api/crew?id=<id>&token=<token>                               poster removes their call
 // DELETE /api/crew?id=<id>                 with the admin key           admin removes any call
 // DELETE /api/crew?id=<id>&action=reports  with the admin key           admin clears its reports
 
 import { createHash, randomBytes } from 'node:crypto';
 import { isAdminKey, keyFromRequest } from '../lib/admin.js';
-import { CONTACT_TYPES, CREW_ID_RE, IN_PREFIX, MAX_OPEN_PER_POSTER, PLATFORMS, REPORT_PREFIX, REPORT_REASONS, REPORT_THRESHOLD, WHEN, deleteCrew, isOpen, publicCrew, readAllCrews } from '../lib/crews.js';
+import { CONTACT_TYPES, CREW_ID_RE, HOLD_MINUTES, IN_PREFIX, MAX_OPEN_PER_POSTER, PLATFORMS, REPORT_PREFIX, REPORT_REASONS, REPORT_THRESHOLD, WHEN, deleteCrew, isHeld, isOpen, posterPath, publicCrew, readAllCrews } from '../lib/crews.js';
 import { ID_RE, INDEX_PATH, readJson, writeJson } from '../lib/submissions.js';
 import { addVote, countVotesFor, deleteVotesFor, hasVoted, removeVote, voterHash } from '../lib/votes.js';
 
@@ -41,6 +42,7 @@ async function toggleIn(request, body) {
   try {
     const crew = await readJson('crews/' + id + '.json');
     if (!crew || !isOpen(crew)) return json({ ok: false, message: 'That crew call is gone.' }, 404);
+    if (isHeld(crew)) return json({ ok: false, message: 'That call is still on hold.' }, 404);
     if ((await countVotesFor(id, REPORT_PREFIX)) >= REPORT_THRESHOLD) return json({ ok: false, message: 'That crew call is gone.' }, 404);
 
     const voter = voterHash(request);
@@ -81,11 +83,30 @@ async function report(request, body) {
   }
 }
 
+async function release(request, body) {
+  if (!isAdminKey(keyFromRequest(request))) return json({ ok: false, message: 'Nope.' }, 401);
+  const id = String(body.id || '');
+  if (!CREW_ID_RE.test(id)) return json({ ok: false, message: 'Bad id.' }, 400);
+  try {
+    const path = 'crews/' + id + '.json';
+    const crew = await readJson(path);
+    if (!crew) return json({ ok: false, message: 'No crew call with that id.' }, 404);
+    delete crew.holdUntil;
+    crew.releasedAt = new Date().toISOString();
+    await writeJson(path, crew);
+    return json({ ok: true, id, crew: publicCrew(crew) });
+  } catch (err) {
+    console.error('release failed', err);
+    return json({ ok: false, message: 'Something broke on our end.' }, 500);
+  }
+}
+
 export async function POST(request) {
   const body = await request.json().catch(() => ({}));
   const action = new URL(request.url).searchParams.get('action') || '';
   if (action === 'in') return toggleIn(request, body);
   if (action === 'report') return report(request, body);
+  if (action === 'release') return release(request, body);
   if (action) return json({ ok: false, message: 'Unknown action.' }, 400);
 
   // Honeypot: hidden field, only bots fill it. Pretend it worked.
@@ -138,7 +159,11 @@ export async function POST(request) {
       return json({ ok: false, message: 'You already have ' + open.length + ' crew calls up. Delete one first.' }, 429);
     }
 
+    // First call from this poster? Hold it off the public board for a bit.
+    const seenBefore = await readJson(posterPath(posterHash));
     const now = new Date();
+    const holdUntil = seenBefore ? null : new Date(now.getTime() + HOLD_MINUTES * 60 * 1000).toISOString();
+
     const id = now.getTime().toString(36) + '-' + randomBytes(3).toString('hex');
     const token = randomBytes(16).toString('hex');
     const crew = {
@@ -160,9 +185,11 @@ export async function POST(request) {
       createdAt: now.toISOString(),
       expiresAt: new Date(now.getTime() + WHEN[when].ttlHours * 3600 * 1000).toISOString()
     };
+    if (holdUntil) crew.holdUntil = holdUntil;
     await writeJson('crews/' + id + '.json', crew);
+    if (!seenBefore) await writeJson(posterPath(posterHash), { firstPostAt: now.toISOString(), firstCallId: id });
 
-    return json({ ok: true, id, token, crew: publicCrew(Object.assign({ in: 0 }, crew)) });
+    return json({ ok: true, id, token, held: !!holdUntil, holdUntil, holdMinutes: HOLD_MINUTES, crew: publicCrew(Object.assign({ in: 0 }, crew)) });
   } catch (err) {
     console.error('crew post failed', err);
     return json({ ok: false, message: 'Something broke on our end. Try again in a bit.' }, 500);

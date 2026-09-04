@@ -671,6 +671,8 @@ p, li { max-width: 80ch; }
 }
 .pill-when { background: var(--tang); }
 .pill-full { background: var(--grape); color: #fff; }
+.pill-held { background: var(--amber); }
+.crew-held { border-style: dashed; }
 .in-btn { margin-top: 0; }
 .crew-form .field select { margin-top: 4px; }
 .crew-form .field input + .hint { margin-top: 4px; }

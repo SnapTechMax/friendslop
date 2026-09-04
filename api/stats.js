@@ -4,7 +4,7 @@
 import { list } from '@vercel/blob';
 import { INDEX_PATH, readJson } from '../lib/submissions.js';
 import { countAllVotes } from '../lib/votes.js';
-import { isOpen, readAllCrews, withInCounts } from '../lib/crews.js';
+import { isHeld, isOpen, readAllCrews, withInCounts } from '../lib/crews.js';
 
 export async function GET() {
   try {
@@ -20,7 +20,7 @@ export async function GET() {
     const approved = index && Array.isArray(index.games) ? index.games.length : 0;
     const counts = await countAllVotes();
     const votes = Object.values(counts).reduce((a, b) => a + b, 0);
-    const crews = (await withInCounts(await readAllCrews())).filter((c) => isOpen(c) && !c.hidden).length;
+    const crews = (await withInCounts(await readAllCrews())).filter((c) => isOpen(c) && !c.hidden && !isHeld(c)).length;
 
     return Response.json({ submissions, approved, votes, crews }, {
       headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' }

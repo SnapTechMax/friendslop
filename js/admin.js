@@ -197,6 +197,19 @@
       .catch(function () { say('That did not work.'); });
   }
 
+  function releaseCrew(id) {
+    say('Releasing...');
+    api('/api/crew?action=release', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id }) })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.ok) { say(d.message || 'That did not work.'); return; }
+        crews = crews.map(function (c) { return c.id === id ? Object.assign({}, c, { held: false, holdUntil: null }) : c; });
+        say('Released. It is on the board now.');
+        render();
+      })
+      .catch(function () { say('That did not work.'); });
+  }
+
   function crewCard(c) {
     var contact = c.contactType === 'link'
       ? el('a', { href: c.contact, target: '_blank', rel: 'noopener noreferrer', text: c.contact })
@@ -207,6 +220,7 @@
         el('span', { class: 'pill pill-when', text: WHEN[c.when] || c.when }),
         el('span', { class: 'pill pill-votes', text: (c.in || 0) + '/' + c.need + ' in' }),
         c.reports ? el('span', { class: 'pill pill-report', text: '\u2691 ' + c.reports + (c.hidden ? ' · hidden' : '') }) : null,
+        c.held ? el('span', { class: 'pill pill-held', text: 'on hold · ' + Math.max(1, Math.ceil((new Date(c.holdUntil).getTime() - Date.now()) / 60000)) + ' min' }) : null,
         el('span', { class: 'when', text: 'posted ' + ago(c.createdAt) })
       ]),
       el('h3', null, [c.gameUrl ? el('a', { href: c.gameUrl, target: '_blank', rel: 'noopener noreferrer', text: c.gameTitle }) : el('span', { text: c.gameTitle })]),
@@ -218,7 +232,8 @@
       })) : null,
       el('div', { class: 'review-actions' }, [
         el('button', { type: 'button', class: 'cta cta-small cta-danger', text: 'Delete', onclick: function () { removeCrew(c.id, c.gameTitle); } }),
-        c.reports ? el('button', { type: 'button', class: 'cta cta-small', text: 'Clear reports', onclick: function () { clearReports(c.id); } }) : null
+        c.reports ? el('button', { type: 'button', class: 'cta cta-small', text: 'Clear reports', onclick: function () { clearReports(c.id); } }) : null,
+        c.held ? el('button', { type: 'button', class: 'cta cta-small', text: 'Release now', onclick: function () { releaseCrew(c.id); } }) : null
       ])
     ]);
   }
