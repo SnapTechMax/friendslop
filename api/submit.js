@@ -4,6 +4,7 @@
 
 import { randomBytes } from 'node:crypto';
 import { put } from '@vercel/blob';
+import { classifyGameUrl } from '../lib/links.js';
 
 const MAX_COVER_BYTES = 2 * 1024 * 1024;
 const IMAGE_EXT = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp' };
@@ -27,13 +28,6 @@ function parseTags(raw) {
     if (seen.size === 5) break;
   }
   return [...seen];
-}
-
-function validUrl(raw) {
-  try {
-    const u = new URL(raw);
-    return (u.protocol === 'http:' || u.protocol === 'https:') && raw.length <= 500;
-  } catch { return false; }
 }
 
 export async function POST(request) {
@@ -60,8 +54,9 @@ export async function POST(request) {
   const tags = parseTags(field(form, 'tags'));
 
   const errors = {};
+  const link = classifyGameUrl(url);
   if (!title || title.length > 80) errors.title = 'Needs a title, 80 characters or fewer.';
-  if (!validUrl(url)) errors.url = 'Needs a full link, starting with http:// or https://.';
+  if (!link.ok) errors.url = link.reason;
   if (!blurb || blurb.length > 500) errors.blurb = 'Say something about it, 500 characters or fewer.';
   if (!Number.isInteger(minPlayers) || minPlayers < 1 || minPlayers > 99) errors.minPlayers = 'Minimum players: a number from 1 to 99.';
   if (!Number.isInteger(maxPlayers) || maxPlayers < 1 || maxPlayers > 99) errors.maxPlayers = 'Maximum players: a number from 1 to 99.';
@@ -101,7 +96,8 @@ export async function POST(request) {
       id,
       status: 'pending',
       title,
-      url,
+      url: link.url,
+      store: link.store,
       blurb,
       players: { min: minPlayers, max: maxPlayers },
       tags,

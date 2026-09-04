@@ -69,7 +69,7 @@
         el('p', { class: 'blurb', text: g.blurb }),
         el('div', { class: 'tags' }, (g.tags || []).map(function (t) { return el('span', { text: t }); })),
         el('div', { class: 'game-actions' }, [
-          el('a', { class: 'cta cta-small', href: g.url, target: '_blank', rel: 'noopener noreferrer', text: 'Get it' }),
+          el('a', { class: 'cta cta-small', href: g.url, target: '_blank', rel: 'noopener noreferrer', text: g.store === 'steam' ? 'Get it on Steam' : g.store === 'itch' ? 'Get it on itch.io' : 'Get it' }),
           voteButton(g),
           el('a', { class: 'crew-link', href: '/crews?game=' + encodeURIComponent(g.id), text: 'find a crew' })
         ])

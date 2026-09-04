@@ -52,6 +52,7 @@ Then visit http://localhost:4173.
 - `lib/admin.js` — shared admin key check
 - `lib/submissions.js` — shared blob helpers and the approved-index rebuild
 - `lib/mail.js` — the approval email and the Resend call
+- `lib/links.js` — which game links are allowed (itch.io and Steam) and which store a link is
 - `api/vote.js` — toggles an upvote on an approved game
 - `lib/votes.js` — one-per-person toggle storage, used by votes and crew "I'm in"
 - `crews.html` / `js/crews.js` — the crew board at `/crews`
@@ -73,7 +74,7 @@ The key is the `SIGNUP_ADMIN_KEY` environment variable on the Vercel project. `v
 
 ## Game submissions
 
-`/submit` posts a multipart form to `/api/submit`. The function validates every field, drops honeypot hits, and writes `submissions/<id>.json` to the same Blob store, plus `covers/<id>.<ext>` when a cover image was attached (PNG, JPG, GIF, or WebP under 2MB). Every submission starts with `status: "pending"`. Nothing is shown publicly yet.
+`/submit` posts a multipart form to `/api/submit`. The function validates every field, drops honeypot hits, accepts only itch.io game pages and Steam store pages as the link (`lib/links.js`; no zips, no other hosts, so nobody has to open an unknown executable), and writes `submissions/<id>.json` to the same Blob store, plus `covers/<id>.<ext>` when a cover image was attached (PNG, JPG, GIF, or WebP under 2MB). Every submission starts with `status: "pending"`. Nothing is shown publicly yet.
 
 A submission record looks like:
 
@@ -83,6 +84,7 @@ A submission record looks like:
   "status": "pending",
   "title": "Untitled Physics Thing",
   "url": "https://example.itch.io/untitled-physics-thing",
+  "store": "itch",
   "blurb": "Four of you run a haunted deli.",
   "players": { "min": 2, "max": 4 },
   "tags": ["physics", "horror"],

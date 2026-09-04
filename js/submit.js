@@ -28,6 +28,24 @@
     toggleCredit();
   }
 
+  // Mirrors lib/links.js on the server: itch.io game pages and Steam store pages only.
+  function gameLink(raw) {
+    var u;
+    try { u = new URL(raw); } catch (e) { return { ok: false, reason: 'Needs a full link, starting with https://.' }; }
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return { ok: false, reason: 'Needs a full link, starting with https://.' };
+    var host = u.hostname.toLowerCase();
+    var path = u.pathname.replace(/\/+$/, '');
+    if (/^([a-z0-9-]+\.)?itch\.io$/.test(host)) {
+      if (path === '') return { ok: false, reason: host === 'itch.io' ? 'Link the game page on itch.io, not the homepage.' : "That's an itch.io profile. Link the game's page, like https://you.itch.io/your-game." };
+      return { ok: true };
+    }
+    if (host === 'store.steampowered.com') {
+      if (!/^\/app\/\d+(\/|$)/.test(u.pathname)) return { ok: false, reason: 'Link the Steam store page, like https://store.steampowered.com/app/12345/Your_Game/.' };
+      return { ok: true };
+    }
+    return { ok: false, reason: "Only itch.io pages and Steam store pages, no zips or other hosts. We're not opening your .exe to find out." };
+  }
+
   function clearErrors() {
     var spans = form.querySelectorAll('.field-error');
     for (var i = 0; i < spans.length; i++) spans[i].textContent = '';
@@ -54,7 +72,8 @@
     var val = function (name) { return (form.elements[name].value || '').trim(); };
 
     if (!val('title')) errors.title = 'Needs a title.';
-    if (!/^https?:\/\/\S+$/i.test(val('url'))) errors.url = 'Needs a full link, starting with http:// or https://.';
+    var link = gameLink(val('url'));
+    if (!link.ok) errors.url = link.reason;
     if (!val('blurb')) errors.blurb = 'Say something about it.';
     var min = parseInt(val('minPlayers'), 10);
     var max = parseInt(val('maxPlayers'), 10);
