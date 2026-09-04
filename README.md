@@ -19,4 +19,28 @@ Small devs make weird, chaotic, "made-with-my-friends" games all the time and mo
 
 ## Status
 
-Brand new. Nothing built yet.
+Landing page only. No backend yet.
+
+## Running it
+
+It's a static site. Open `index.html` directly, or serve the folder:
+
+```bash
+python3 -m http.server 4173
+```
+
+Then visit http://localhost:4173.
+
+## Layout
+
+- `index.html` — the landing page
+- `css/styles.css` — all styling. Loud on purpose, readable on purpose.
+- `js/main.js` — visitor counter, the ticking "bugs shipped as features" stat, and the signup form handler
+
+## Signup form
+
+The form in `index.html` posts JSON (`{ email, role }`) to whatever URL is in its `data-endpoint` attribute. It's empty right now, so the form tells people sign-ups aren't wired up yet. Point it at a form backend or your own endpoint when one exists.
+
+## Style notes
+
+The look borrows from gamerbf.com: Comic Sans, a cream page over a magenta/cyan/yellow background, thick ridge and double borders, hard black shadows, slightly rotated cards, a marquee, a green-on-black "system notice" box, and a hit counter. The copy is deadpan but explains what the site actually does.

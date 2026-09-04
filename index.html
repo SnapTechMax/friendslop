@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>friendslop.wtf — small devs, weird co-op games, your friends</title>
+  <meta name="description" content="A community for small devs to post their friendslop co-op games and for players to find a crew to play them with. The good stuff floats up.">
+  <meta property="og:title" content="friendslop.wtf">
+  <meta property="og:description" content="Post your friendslop. Find a crew. Go viral (maybe).">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://friendslop.wtf/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="site-bg" aria-hidden="true"></div>
+
+  <marquee class="ticker" scrollamount="10">SMALL DEVS. WEIRD CO-OP GAMES. YOUR FRIENDS. &nbsp;&nbsp;|&nbsp;&nbsp; POST YOUR FRIENDSLOP 🎮 FIND A CREW 🎮 GO VIRAL (MAYBE) &nbsp;&nbsp;|&nbsp;&nbsp; 🚧 UNDER CONSTRUCTION, LIKE MOST OF THE GAMES HERE 🚧</marquee>
+
+  <div class="container">
+    <h1 class="wordart">friendslop<span>.wtf</span></h1>
+
+    <p class="subhead">
+      <span class="blink">🎮 NOW ACCEPTING SLOP 🎮</span> — A place for the four-player physics-horror-cooking-sim you made in a weekend to get seen by people who aren't in your Discord.
+    </p>
+
+    <section class="hero">
+      <div class="card card-tilt-r">
+        <span class="badge">Certified Made-With-Friends™</span>
+        <h2>Ship it. Get it played.</h2>
+        <p>Friendslop is the game you made with your friends, for your friends, and it deserves more than a link buried in a group chat. Post it here. Players come looking for exactly this.</p>
+        <ul class="bullets">
+          <li><b>Post your game</b> — itch link, Steam page, a Google Drive zip. We don't judge [we do look at the zip first].</li>
+          <li><b>Find a crew</b> — players who need three more for tonight.</li>
+          <li><b>The good stuff floats up</b> — devs and players vote. Top slop hits the front page and we push it everywhere we can.</li>
+        </ul>
+        <a class="cta" href="#signup">Submit a game</a>
+        <a class="cta cta-alt" href="#signup">Find a crew</a>
+      </div>
+
+      <div class="card card-tilt-l card-side">
+        <div class="terminal">
+          <b>&gt;&gt; LOBBY STATUS &lt;&lt;</b><br>
+          Games posted: <span id="stat-games">0</span><br>
+          Crews formed: <span id="stat-crews">0</span><br>
+          Bugs shipped as features: <span id="stat-bugs" class="blink">15</span>
+        </div>
+        <div class="side-bits">
+          <span class="construction">🚧 Under Construction 🚧</span>
+          <div class="counter-row">
+            Visitors: <span class="hit-counter" id="hits">000001</span>
+            <div class="counter-note">(counts you. only you. for now.)</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <center><h3 class="section-title">Front page slop (soon)</h3></center>
+    <p class="section-lede">This is where the top games go. Right now it's where your game goes.</p>
+
+    <div class="games">
+      <article class="game card">
+        <div class="cover cover-a"><span>YOUR GAME HERE</span></div>
+        <h4>Untitled Physics Thing</h4>
+        <div class="meta">2–4 players · co-op · made in three weekends</div>
+        <div class="tags"><span>physics</span><span>screaming</span><span>ragdoll</span></div>
+        <a class="cta cta-small" href="#signup">Post it</a>
+      </article>
+      <article class="game card">
+        <div class="cover cover-b"><span>ALSO YOUR GAME</span></div>
+        <h4>The Jam Game You Never Finished</h4>
+        <div class="meta">1–8 players · horror-ish · has a bug we like</div>
+        <div class="tags"><span>jam</span><span>proximity chat</span><span>jank</span></div>
+        <a class="cta cta-small" href="#signup">Finish it. Post it.</a>
+      </article>
+      <article class="game card">
+        <div class="cover cover-c"><span>YOUR FRIEND'S GAME</span></div>
+        <h4>The One You Keep Saying You'll Post</h4>
+        <div class="meta">3 players · exactly 3 · don't ask</div>
+        <div class="tags"><span>co-op</span><span>friends</span><span>please</span></div>
+        <a class="cta cta-small" href="#signup">Post it for them</a>
+      </article>
+    </div>
+
+    <div class="divider"></div>
+
+    <center><h3 class="section-title">How it works</h3></center>
+
+    <div class="two-col">
+      <div>
+        <h4 class="col-title">If you make games</h4>
+        <ol class="steps">
+          <li>Post your game: a link, a screenshot, how many players it wants.</li>
+          <li>People play it with their friends and vote.</li>
+          <li>If it's good it goes up. If it's bad in a fun way it also goes up sometimes.</li>
+        </ol>
+      </div>
+      <div>
+        <h4 class="col-title">If you play games</h4>
+        <ol class="steps">
+          <li>Find something weird on the front page.</li>
+          <li>Find three more people. We help with this part.</li>
+          <li>Play it. Vote. Tell the dev what broke.</li>
+        </ol>
+      </div>
+    </div>
+
+    <center><h3 class="section-title">What counts as friendslop?</h3></center>
+
+    <table class="loud-table">
+      <tr>
+        <th>Counts</th>
+        <th>Also counts</th>
+        <th>Does not count</th>
+      </tr>
+      <tr>
+        <td>A co-op game made by one to five people</td>
+        <td>The jam game you never finished (finish it, post it)</td>
+        <td>Anything with a battle pass</td>
+      </tr>
+      <tr>
+        <td>Anything where the fun is your friends yelling</td>
+        <td>A mod that turned into its own game</td>
+        <td>A studio of 400 calling itself "indie"</td>
+      </tr>
+      <tr>
+        <td>Jank you shipped on purpose</td>
+        <td>Solo games you play on a call with friends</td>
+        <td>Being mean to devs in the comments</td>
+      </tr>
+    </table>
+
+    <center><h3 class="section-title">FAQ</h3></center>
+    <div class="faq">
+      <details>
+        <summary><b>Is this a joke?</b></summary>
+        <p>The site looks like one. The games are real and so are the devs. Post yours.</p>
+      </details>
+      <details>
+        <summary><b>Do I need a Steam page?</b></summary>
+        <p>No. An itch.io link, a Steam page, a Google Drive zip, a build your friend sent you at 2am. We'll look at the zip before it goes up, because we're not monsters.</p>
+      </details>
+      <details>
+        <summary><b>What does "go viral" actually mean here?</b></summary>
+        <p>Top-voted games get the front page and we push them everywhere we can reach: socials, the newsletter, the Discord, our own group chats. It's a small machine right now. It gets bigger with you in it.</p>
+      </details>
+      <details>
+        <summary><b>I'm a player, not a dev. Why am I here?</b></summary>
+        <p>Because friendslop needs friends. Browse games, grab a crew, play, vote. The devs literally cannot do the last three for you.</p>
+      </details>
+      <details>
+        <summary><b>Can I post someone else's game?</b></summary>
+        <p>Yes, if you credit them and they're cool with it. Posting your friend's game is kind of the whole point.</p>
+      </details>
+    </div>
+
+    <div class="divider"></div>
+
+    <center id="signup"><h3 class="section-title">Get in early</h3></center>
+
+    <form id="signup-form" class="signup" data-endpoint="">
+      <p class="signup-blurb">
+        Submissions and crew-finding are still being built [it's a small team, hi]. Drop your email and we'll tell you the second they open, plus send the best slop we find each week.
+      </p>
+      <label class="field">
+        I am a
+        <select id="signup-role" name="role">
+          <option value="dev">dev with a game to post</option>
+          <option value="player">player looking for a crew</option>
+          <option value="both">both, somehow</option>
+        </select>
+      </label>
+      <label class="field">
+        Email address
+        <input id="signup-email" name="email" type="email" required placeholder="you@example.com" autocomplete="email">
+      </label>
+      <button type="submit" class="cta cta-wide">Summon a lobby</button>
+      <div id="signup-status" class="signup-status" role="status" aria-live="polite"></div>
+    </form>
+
+    <p class="fineprint">© 2026 friendslop.wtf — Made with friends. Be decent in lobbies.</p>
+  </div>
+
+  <a class="sticker" href="#signup">
+    <div class="sticker-big">⭐ NEW ⭐</div>
+    <div class="sticker-small">Post your game</div>
+  </a>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
