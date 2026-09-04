@@ -7,6 +7,7 @@ import { del, list } from '@vercel/blob';
 import { isAdminKey, keyFromRequest } from '../lib/admin.js';
 import { sendApprovalEmail } from '../lib/mail.js';
 import { ID_RE, STATUSES, readJson, writeJson, rebuildApprovedIndex } from '../lib/submissions.js';
+import { deleteVotesFor } from '../lib/votes.js';
 
 function json(body, status = 200) {
   return Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
@@ -72,9 +73,10 @@ export async function DELETE(request) {
     const { blobs } = await list({ prefix: 'covers/' + id + '.', limit: 5 });
     for (const b of blobs) doomed.push(b.pathname);
     await del(doomed);
+    const votesDeleted = await deleteVotesFor(id);
 
     const games = await rebuildApprovedIndex();
-    return json({ ok: true, id, deleted: doomed, approvedCount: games.length });
+    return json({ ok: true, id, deleted: doomed, votesDeleted, approvedCount: games.length });
   } catch (err) {
     console.error('delete failed', err);
     return json({ ok: false, message: 'Something broke on our end.' }, 500);

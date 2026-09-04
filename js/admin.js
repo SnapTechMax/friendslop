@@ -132,6 +132,7 @@
     var players = r.players ? (r.players.min === r.players.max ? r.players.min + ' players' : r.players.min + '–' + r.players.max + ' players') : '';
 
     var pills = [el('span', { class: 'pill pill-' + r.status, text: r.status })];
+    if (r.status === 'approved') pills.push(el('span', { class: 'pill pill-votes', text: '\u25b2 ' + (r.votes || 0) }));
     if (r.approvedAt) pills.push(el('span', { class: 'when', text: 'approved ' + ago(r.approvedAt) }));
     pills.push(el('span', { class: 'when', text: 'submitted ' + ago(r.submittedAt) }));
     if (r.status === 'approved') {

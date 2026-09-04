@@ -19,7 +19,7 @@ Small devs make weird, chaotic, "made-with-my-friends" games all the time and mo
 
 ## Status
 
-Landing page, signup form, game submission form, a review queue at `/admin`, and approved games showing on the front page. No voting or crew-finding yet.
+Landing page, signup form, game submission form, a review queue at `/admin`, approved games on the front page with upvotes, and approval emails once a Resend key is set. No crew-finding yet.
 
 ## Running it
 
@@ -51,6 +51,8 @@ Then visit http://localhost:4173.
 - `lib/admin.js` — shared admin key check
 - `lib/submissions.js` — shared blob helpers and the approved-index rebuild
 - `lib/mail.js` — the approval email and the Resend call
+- `api/vote.js` — toggles an upvote on an approved game
+- `lib/votes.js` — vote storage, hashing, and counting
 - `vercel.json` — `cleanUrls` so `/submit.html` is reachable as `/submit`
 
 ## Signup form
@@ -103,7 +105,7 @@ Open `/admin`, paste the admin key, and you get the queue: Pending, Approved, Re
 
 Under the hood, `POST /api/review` with `{ "id", "status", "note" }` updates the record, and `DELETE /api/review?id=<id>` removes the record and its cover. After every change the function rebuilds `index/approved.json`, a single blob holding the public fields of every approved game, newest approval first. That's what `/api/games` serves, cached at the edge for 30 seconds, so a freshly approved game can take up to half a minute to appear.
 
-The front page fetches `/api/games` and, when there is at least one approved game, swaps the three placeholder cards for real ones. Titles and blurbs are rendered as text, never as HTML.
+The front page fetches `/api/games` and, when there is at least one approved game, swaps the three placeholder cards for real ones with vote buttons. Titles and blurbs are rendered as text, never as HTML.
 
 ### Approval emails
 
@@ -124,6 +126,14 @@ Without the variables, approving still works. The admin card shows "not emailed"
 curl -X POST https://friendslop.wtf/api/review -H "Authorization: Bearer $SIGNUP_ADMIN_KEY" \
   -H "Content-Type: application/json" -d '{"id":"<id>","status":"approved"}'
 ```
+
+## Voting
+
+Every approved game on the front page has an upvote button. `POST /api/vote` with `{ "id": "<game id>" }` toggles the caller's vote and returns `{ ok, voted, count }`. Only games in the approved index can be voted on.
+
+There are no accounts. A voter is a salted SHA-256 hash of the request IP (`VOTE_SALT` is the salt, set on the Vercel project), and each vote is one tiny blob at `votes/<game id>/<voter hash>.json`, so the pathname itself enforces one vote per person per game. Counts are exact: `/api/games` lists the `votes/` prefix and tallies, then sorts most votes first, newest approval first when tied. That list is cached at the edge for 30 seconds. The browser remembers what it voted for in localStorage so the arrow lights up on reload, but the server is the record.
+
+People behind one shared IP count as one voter. That's the trade-off for not making anyone sign up. Deleting a game from `/admin` deletes its votes too. `/api/stats` includes the total, and the admin list and CSV show each game's count.
 
 ## Local development
 

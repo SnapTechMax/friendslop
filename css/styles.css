@@ -610,6 +610,40 @@ p, li { max-width: 80ch; }
   overflow: hidden;
 }
 
+.game-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.vote {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  font-family: var(--font);
+  font-weight: 900;
+  font-size: 15px;
+  color: var(--ink);
+  background: #fff;
+  border: 5px ridge var(--line);
+  padding: 4px 10px;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 var(--line);
+  transition: transform 0.08s ease, background 0.08s ease;
+}
+
+.vote:hover, .vote:focus-visible { transform: translate(-1px, -1px); outline: none; }
+.vote:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--line); }
+.vote:disabled { opacity: 0.7; cursor: wait; }
+.vote.is-on { background: var(--lime); }
+.vote.is-on .vote-arrow { color: var(--grape); }
+.vote-arrow { font-size: 13px; }
+.vote-count { font-family: var(--mono); font-size: 16px; }
+
+.is-shake { animation: shake 0.4s ease; }
+@keyframes shake {
+  25% { transform: translateX(-4px); }
+  50% { transform: translateX(4px); }
+  75% { transform: translateX(-2px); }
+}
+
 /* The back room */
 .key-card { max-width: 520px; margin: 26px auto 0; }
 
@@ -691,6 +725,7 @@ p, li { max-width: 80ch; }
 .pill-approved { background: var(--lime); }
 .pill-rejected { background: var(--pink); color: #fff; }
 .pill-mail { background: var(--grape-soft); }
+.pill-votes { background: #fff; font-family: var(--mono); }
 .pill-nomail { background: #fff; border-style: dashed; }
 .mail-error { color: #c4003f; font-weight: 700; }
 .cta-mail { background: linear-gradient(90deg, var(--grape-soft), var(--lime-soft)); }

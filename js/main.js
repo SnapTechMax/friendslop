@@ -31,6 +31,8 @@
     fetch('/api/stats').then(function (r) { return r.json(); }).then(function (d) {
       if (d && typeof d.submissions === 'number') games.textContent = String(d.submissions);
       if (live && d && typeof d.approved === 'number') live.textContent = String(d.approved);
+      var votes = document.getElementById('stat-votes');
+      if (votes && d && typeof d.votes === 'number') votes.textContent = String(d.votes);
     }).catch(function () {});
   }
 
@@ -49,6 +51,38 @@
       return node;
     };
     var stripes = ['cover-a', 'cover-b', 'cover-c'];
+
+    // Which games this browser has voted for. The server is the real record;
+    // this just paints the button the right colour on load.
+    var myVotes = {};
+    try { myVotes = JSON.parse(localStorage.getItem('fs_votes') || '{}') || {}; } catch (e) { myVotes = {}; }
+    var rememberVote = function (id, on) {
+      if (on) myVotes[id] = true; else delete myVotes[id];
+      try { localStorage.setItem('fs_votes', JSON.stringify(myVotes)); } catch (e) { /* fine */ }
+    };
+
+    var voteButton = function (g) {
+      var count = el('span', { class: 'vote-count', text: String(g.votes || 0) });
+      var btn = el('button', { type: 'button', class: 'vote' + (myVotes[g.id] ? ' is-on' : ''), title: 'Upvote' }, [
+        el('span', { class: 'vote-arrow', text: '\u25b2' }), count
+      ]);
+      btn.addEventListener('click', function () {
+        if (btn.disabled) return;
+        btn.disabled = true;
+        fetch('/api/vote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: g.id })
+        }).then(function (r) { return r.json(); }).then(function (d) {
+          if (!d || !d.ok) { btn.classList.add('is-shake'); setTimeout(function () { btn.classList.remove('is-shake'); }, 400); return; }
+          count.textContent = String(d.count);
+          btn.classList.toggle('is-on', !!d.voted);
+          rememberVote(g.id, !!d.voted);
+        }).catch(function () {}).then(function () { btn.disabled = false; });
+      });
+      return btn;
+    };
+
     var gameCard = function (g, i) {
       var cover = g.hasCover
         ? el('div', { class: 'cover cover-img' }, [el('img', { src: '/api/cover?id=' + encodeURIComponent(g.id), alt: '', loading: 'lazy' })])
@@ -61,7 +95,10 @@
         el('div', { class: 'meta', text: players + ' \u00b7 by ' + who }),
         el('p', { class: 'blurb', text: g.blurb }),
         el('div', { class: 'tags' }, (g.tags || []).map(function (t) { return el('span', { text: t }); })),
-        el('a', { class: 'cta cta-small', href: g.url, target: '_blank', rel: 'noopener noreferrer', text: 'Get it' })
+        el('div', { class: 'game-actions' }, [
+          el('a', { class: 'cta cta-small', href: g.url, target: '_blank', rel: 'noopener noreferrer', text: 'Get it' }),
+          voteButton(g)
+        ])
       ]);
     };
     fetch('/api/games').then(function (r) { return r.json(); }).then(function (d) {
@@ -70,7 +107,7 @@
       var title = document.getElementById('games-title');
       var lede = document.getElementById('games-lede');
       if (title) title.textContent = 'Front page slop';
-      if (lede) lede.textContent = 'Real games by real small teams. Newest first. Voting is coming; for now, go play them.';
+      if (lede) lede.textContent = 'Real games by real small teams. Most votes first. Play one, then hit the arrow if it deserves it.';
       grid.textContent = '';
       list.forEach(function (g, i) { grid.appendChild(gameCard(g, i)); });
     }).catch(function () {});
