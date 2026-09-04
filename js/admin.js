@@ -5,6 +5,7 @@
   var KEY_STORAGE = 'fs_admin_key';
   var key = '';
   var all = [];
+  var crews = [];
   var filter = 'pending';
 
   var keyCard = document.getElementById('key-card');
@@ -67,6 +68,10 @@
         queue.hidden = false;
         say('');
         render();
+        return api('/api/crews?all=1').then(function (r) { return r.json(); }).then(function (c) {
+          crews = c.crews || [];
+          render();
+        });
       })
       .catch(function (err) {
         if (err.message !== 'unauthorized') say('Could not load the queue. Try refresh.');
@@ -74,7 +79,7 @@
   }
 
   function counts() {
-    var c = { pending: 0, approved: 0, rejected: 0, all: all.length };
+    var c = { pending: 0, approved: 0, rejected: 0, all: all.length, crews: crews.length };
     all.forEach(function (r) { if (c[r.status] !== undefined) c[r.status] += 1; });
     Object.keys(c).forEach(function (k) {
       var span = document.querySelector('[data-count="' + k + '"]');
@@ -163,8 +168,51 @@
     ]);
   }
 
+  function removeCrew(id, title) {
+    if (!window.confirm('Delete the crew call for "' + title + '"?')) return;
+    say('Deleting...');
+    api('/api/crew?id=' + encodeURIComponent(id), { method: 'DELETE' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.ok) { say(d.message || 'That did not work.'); return; }
+        crews = crews.filter(function (c) { return c.id !== id; });
+        say('Deleted.');
+        render();
+      })
+      .catch(function () { say('That did not work.'); });
+  }
+
+  var WHEN = { now: 'right now', tonight: 'tonight', tomorrow: 'tomorrow', weekend: 'this weekend', whenever: 'whenever' };
+
+  function crewCard(c) {
+    var contact = c.contactType === 'link'
+      ? el('a', { href: c.contact, target: '_blank', rel: 'noopener noreferrer', text: c.contact })
+      : el('code', { text: c.contact });
+    return el('article', { class: 'card review crew' + (c.open ? '' : ' review-rejected') }, [
+      el('div', { class: 'review-head' }, [
+        el('span', { class: 'pill ' + (c.open ? 'pill-approved' : 'pill-rejected'), text: c.open ? 'open' : 'expired' }),
+        el('span', { class: 'pill pill-when', text: WHEN[c.when] || c.when }),
+        el('span', { class: 'pill pill-votes', text: (c.in || 0) + '/' + c.need + ' in' }),
+        el('span', { class: 'when', text: 'posted ' + ago(c.createdAt) })
+      ]),
+      el('h3', null, [c.gameUrl ? el('a', { href: c.gameUrl, target: '_blank', rel: 'noopener noreferrer', text: c.gameTitle }) : el('span', { text: c.gameTitle })]),
+      el('div', { class: 'meta', text: 'have ' + c.have + ' · need ' + c.need + ' · ' + c.platform + (c.region ? ' · ' + c.region : '') + (c.whenNote ? ' · ' + c.whenNote : '') }),
+      c.note ? el('p', { class: 'blurb', text: c.note }) : null,
+      el('div', { class: 'meta meta-contact' }, [c.contactType + ': ', contact, ' · id ', el('code', { text: c.id })]),
+      el('div', { class: 'review-actions' }, [
+        el('button', { type: 'button', class: 'cta cta-small cta-danger', text: 'Delete', onclick: function () { removeCrew(c.id, c.gameTitle); } })
+      ])
+    ]);
+  }
+
   function render() {
     counts();
+    if (filter === 'crews') {
+      listEl.textContent = '';
+      crews.forEach(function (c) { listEl.appendChild(crewCard(c)); });
+      emptyEl.hidden = crews.length > 0;
+      return;
+    }
     var rows = all.filter(function (r) { return filter === 'all' || r.status === filter; });
     rows.sort(function (a, b) { return String(b.submittedAt).localeCompare(String(a.submittedAt)); });
     listEl.textContent = '';

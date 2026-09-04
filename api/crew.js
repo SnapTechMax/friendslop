@@ -1,0 +1,136 @@
+// POST   /api/crew  (json)  -> { ok, id, token, crew }   post a crew call
+// DELETE /api/crew?id=<id>&token=<token>                 poster removes their call
+// DELETE /api/crew?id=<id>  with the admin key            admin removes any call
+
+import { createHash, randomBytes } from 'node:crypto';
+import { isAdminKey, keyFromRequest } from '../lib/admin.js';
+import { CONTACT_TYPES, CREW_ID_RE, MAX_OPEN_PER_POSTER, PLATFORMS, WHEN, deleteCrew, isOpen, publicCrew, readAllCrews } from '../lib/crews.js';
+import { ID_RE, INDEX_PATH, readJson, writeJson } from '../lib/submissions.js';
+import { voterHash } from '../lib/votes.js';
+
+const DISCORD_RE = /^[\w.#\- ]{2,40}$/;
+
+function json(body, status = 200) {
+  return Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
+}
+
+function str(v, max) {
+  return typeof v === 'string' ? v.trim().slice(0, max + 1) : '';
+}
+
+function validUrl(raw) {
+  try {
+    const u = new URL(raw);
+    return (u.protocol === 'http:' || u.protocol === 'https:') && raw.length <= 300;
+  } catch { return false; }
+}
+
+function sha(s) {
+  return createHash('sha256').update(s).digest('hex');
+}
+
+export async function POST(request) {
+  const body = await request.json().catch(() => ({}));
+
+  // Honeypot: hidden field, only bots fill it. Pretend it worked.
+  if (str(body.website, 10)) return json({ ok: true, id: 'thanks', token: '', crew: null });
+
+  const gameId = str(body.gameId, 40);
+  let gameTitle = str(body.gameTitle, 80);
+  const have = parseInt(body.have, 10);
+  const need = parseInt(body.need, 10);
+  const when = str(body.when, 20);
+  const whenNote = str(body.whenNote, 60);
+  const platform = str(body.platform, 20) || 'any';
+  const region = str(body.region, 30);
+  const contactType = str(body.contactType, 20);
+  const contact = str(body.contact, 120);
+  const note = str(body.note, 200);
+
+  const errors = {};
+  let gameUrl = null;
+
+  try {
+    if (gameId) {
+      if (!ID_RE.test(gameId)) errors.gameId = 'Pick a game from the list.';
+      else {
+        const index = await readJson(INDEX_PATH);
+        const game = index && Array.isArray(index.games) ? index.games.find((g) => g.id === gameId) : null;
+        if (!game) errors.gameId = 'That game is not on the front page.';
+        else { gameTitle = game.title; gameUrl = game.url; }
+      }
+    } else if (!gameTitle || gameTitle.length > 80) {
+      errors.gameTitle = 'What are you playing? 80 characters or fewer.';
+    }
+    if (!Number.isInteger(have) || have < 1 || have > 15) errors.have = 'How many do you have already? 1 to 15.';
+    if (!Number.isInteger(need) || need < 1 || need > 15) errors.need = 'How many more do you need? 1 to 15.';
+    if (!WHEN[when]) errors.when = 'Pick when.';
+    if (whenNote.length > 60) errors.whenNote = '60 characters or fewer.';
+    if (!PLATFORMS.has(platform)) errors.platform = 'Pick a platform.';
+    if (region.length > 30) errors.region = '30 characters or fewer.';
+    if (!CONTACT_TYPES.has(contactType)) errors.contactType = 'How should people reach you?';
+    else if (!contact || contact.length > 120) errors.contact = 'People need a way to reach you. 120 characters or fewer.';
+    else if (contactType === 'link' && !validUrl(contact)) errors.contact = 'Needs a full link, starting with http:// or https://.';
+    else if (contactType === 'discord' && !DISCORD_RE.test(contact)) errors.contact = 'That does not look like a Discord username.';
+    if (note.length > 200) errors.note = '200 characters or fewer.';
+
+    if (Object.keys(errors).length) return json({ ok: false, message: 'Fix the marked fields and try again.', errors }, 400);
+
+    const posterHash = voterHash(request);
+    const open = (await readAllCrews()).filter((c) => c.posterHash === posterHash && isOpen(c));
+    if (open.length >= MAX_OPEN_PER_POSTER) {
+      return json({ ok: false, message: 'You already have ' + open.length + ' crew calls up. Delete one first.' }, 429);
+    }
+
+    const now = new Date();
+    const id = now.getTime().toString(36) + '-' + randomBytes(3).toString('hex');
+    const token = randomBytes(16).toString('hex');
+    const crew = {
+      id,
+      gameId: gameId || null,
+      gameTitle,
+      gameUrl,
+      have,
+      need,
+      when,
+      whenNote,
+      platform,
+      region,
+      contactType,
+      contact,
+      note,
+      posterHash,
+      tokenHash: sha(token),
+      createdAt: now.toISOString(),
+      expiresAt: new Date(now.getTime() + WHEN[when].ttlHours * 3600 * 1000).toISOString()
+    };
+    await writeJson('crews/' + id + '.json', crew);
+
+    return json({ ok: true, id, token, crew: publicCrew(Object.assign({ in: 0 }, crew)) });
+  } catch (err) {
+    console.error('crew post failed', err);
+    return json({ ok: false, message: 'Something broke on our end. Try again in a bit.' }, 500);
+  }
+}
+
+export async function DELETE(request) {
+  const url = new URL(request.url);
+  const id = url.searchParams.get('id') || '';
+  const token = url.searchParams.get('token') || '';
+  if (!CREW_ID_RE.test(id)) return json({ ok: false, message: 'Bad id.' }, 400);
+
+  try {
+    const crew = await readJson('crews/' + id + '.json');
+    if (!crew) return json({ ok: false, message: 'No crew call with that id.' }, 404);
+
+    const admin = isAdminKey(keyFromRequest(request));
+    const owner = token && crew.tokenHash === sha(token);
+    if (!admin && !owner) return json({ ok: false, message: 'Not yours.' }, 403);
+
+    const claims = await deleteCrew(id);
+    return json({ ok: true, id, claimsDeleted: claims });
+  } catch (err) {
+    console.error('crew delete failed', err);
+    return json({ ok: false, message: 'Something broke on our end.' }, 500);
+  }
+}

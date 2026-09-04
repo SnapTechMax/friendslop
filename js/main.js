@@ -33,6 +33,8 @@
       if (live && d && typeof d.approved === 'number') live.textContent = String(d.approved);
       var votes = document.getElementById('stat-votes');
       if (votes && d && typeof d.votes === 'number') votes.textContent = String(d.votes);
+      var crews = document.getElementById('stat-crews');
+      if (crews && d && typeof d.crews === 'number') crews.textContent = String(d.crews);
     }).catch(function () {});
   }
 
@@ -97,7 +99,8 @@
         el('div', { class: 'tags' }, (g.tags || []).map(function (t) { return el('span', { text: t }); })),
         el('div', { class: 'game-actions' }, [
           el('a', { class: 'cta cta-small', href: g.url, target: '_blank', rel: 'noopener noreferrer', text: 'Get it' }),
-          voteButton(g)
+          voteButton(g),
+          el('a', { class: 'crew-link', href: '/crews?game=' + encodeURIComponent(g.id), text: 'find a crew' })
         ])
       ]);
     };

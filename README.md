@@ -19,7 +19,7 @@ Small devs make weird, chaotic, "made-with-my-friends" games all the time and mo
 
 ## Status
 
-Landing page, signup form, game submission form, a review queue at `/admin`, approved games on the front page with upvotes, and approval emails once a Resend key is set. No crew-finding yet.
+Landing page, signup form, game submission form, a review queue at `/admin`, approved games on the front page with upvotes, a crew board at `/crews`, and approval emails once a Resend key is set.
 
 ## Running it
 
@@ -52,7 +52,10 @@ Then visit http://localhost:4173.
 - `lib/submissions.js` — shared blob helpers and the approved-index rebuild
 - `lib/mail.js` — the approval email and the Resend call
 - `api/vote.js` — toggles an upvote on an approved game
-- `lib/votes.js` — vote storage, hashing, and counting
+- `lib/votes.js` — one-per-person toggle storage, used by votes and crew "I'm in"
+- `crews.html` / `js/crews.js` — the crew board at `/crews`
+- `api/crews.js` — lists crew calls; `api/crew.js` — post and delete; `api/crew-in.js` — "I'm in"
+- `lib/crews.js` — crew storage, expiry, and the sweep
 - `vercel.json` — `cleanUrls` so `/submit.html` is reachable as `/submit`
 
 ## Signup form
@@ -97,7 +100,7 @@ To see the queue, call `/api/submissions` with the admin key. JSON by default, `
 curl -H "Authorization: Bearer $SIGNUP_ADMIN_KEY" https://friendslop.wtf/api/submissions
 ```
 
-Covers are served at `/api/cover?id=<submission id>`. `/api/stats` returns `{ "submissions": <count>, "approved": <count> }` and feeds the front page's lobby status box.
+Covers are served at `/api/cover?id=<submission id>`. `/api/stats` returns submission, approved, vote, and open-crew counts and feeds the front page's lobby status box.
 
 ## Reviewing submissions
 
@@ -134,6 +137,19 @@ Every approved game on the front page has an upvote button. `POST /api/vote` wit
 There are no accounts. A voter is a salted SHA-256 hash of the request IP (`VOTE_SALT` is the salt, set on the Vercel project), and each vote is one tiny blob at `votes/<game id>/<voter hash>.json`, so the pathname itself enforces one vote per person per game. Counts are exact: `/api/games` lists the `votes/` prefix and tallies, then sorts most votes first, newest approval first when tied. That list is cached at the edge for 30 seconds. The browser remembers what it voted for in localStorage so the arrow lights up on reload, but the server is the record.
 
 People behind one shared IP count as one voter. That's the trade-off for not making anyone sign up. Deleting a game from `/admin` deletes its votes too. `/api/stats` includes the total, and the admin list and CSV show each game's count.
+
+## Crew board
+
+`/crews` is a looking-for-group board. Anyone can post a crew call: which game (one from the front page, or anything typed in), how many they have and need, when, platform, region, how to reach them (a Discord username, an invite link, or free text), and a note. No accounts. Calls expire on their own based on "when": right now lasts 6 hours, tonight 18, tomorrow 36, this weekend 96, whenever a week. Expired calls drop out of the list immediately and get deleted a day later by the public list endpoint itself, so there is no cron.
+
+Endpoints:
+
+- `GET /api/crews` lists open calls, newest first, cached 15 seconds. `?all=1` with the admin key includes expired ones.
+- `POST /api/crew` posts a call and returns a one-time `token`. The browser keeps it in localStorage so the poster gets a "Delete my call" button. Three open calls per poster (salted IP hash), then a 429.
+- `DELETE /api/crew?id=<id>&token=<token>` lets the poster remove it; the admin key works without a token.
+- `POST /api/crew-in` with `{ "id" }` toggles "I'm in", one per person per call, same mechanism as votes. Cards show `in/need` and flip to "probably full" when it's reached. It's a signal, not a reservation; the contact method is where the crew actually forms.
+
+Contact details are public by design, that's the whole point of the board. Invite links must be full http(s) URLs and open in a new tab; usernames are shown as text with a copy button. The Crews tab on `/admin` lists every call, open or expired, with a delete button.
 
 ## Local development
 

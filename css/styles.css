@@ -611,6 +611,7 @@ p, li { max-width: 80ch; }
 }
 
 .game-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.crew-link { margin-top: 12px; font-size: 13px; font-weight: 700; color: var(--grape); }
 
 .vote {
   display: inline-flex;
@@ -643,6 +644,37 @@ p, li { max-width: 80ch; }
   50% { transform: translateX(4px); }
   75% { transform: translateX(-2px); }
 }
+
+/* Crew board */
+.crews-layout { grid-template-columns: 1.1fr 0.9fr; align-items: start; }
+.board-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.board-head .cta { margin-top: 0; }
+.crew-list { display: grid; gap: 18px; }
+.crew { padding: 14px; }
+.crew-full { opacity: 0.8; }
+.crew-head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.crew h3 { margin: 6px 0 2px; font-size: 21px; line-height: 1.15; }
+.crew h3 a { color: var(--ink); }
+.crew .meta { font-size: 14px; color: #3a2a4a; }
+.crew .blurb { margin: 6px 0 0; font-size: 15px; }
+.crew-contact { margin-top: 10px; font-size: 15px; }
+.crew-contact .cta { margin-top: 0; }
+.contact-value { font-family: var(--mono); font-weight: 700; background: #fff; border: 3px solid var(--line); padding: 1px 6px; }
+.copy {
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 700;
+  border: 3px solid var(--line);
+  background: var(--lime-soft);
+  padding: 1px 6px;
+  cursor: pointer;
+}
+.pill-when { background: var(--tang); }
+.pill-full { background: var(--grape); color: #fff; }
+.in-btn { margin-top: 0; }
+.crew-form .field select { margin-top: 4px; }
+.crew-form .field input + .hint { margin-top: 4px; }
+.crew-form .field select + input { margin-top: 6px; }
 
 /* The back room */
 .key-card { max-width: 520px; margin: 26px auto 0; }
@@ -766,6 +798,7 @@ p, li { max-width: 80ch; }
   .hero, .two-col, .submit-layout { grid-template-columns: 1fr; }
   .field-row { grid-template-columns: 1fr; gap: 0; }
   .review-grid { grid-template-columns: 1fr; }
+  .crews-layout { grid-template-columns: 1fr; }
   .games { grid-template-columns: 1fr; }
   .sticker { display: none; }
   .loud-table { border-spacing: 4px; }

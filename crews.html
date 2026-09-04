@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Find a crew — friendslop.wtf</title>
+  <meta name="description" content="Need three more for tonight? Post a crew call or join one. No accounts, just a Discord handle and a game.">
+  <meta property="og:title" content="Find a crew — friendslop.wtf">
+  <meta property="og:description" content="Need three more for tonight? Post a crew call or join one.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://friendslop.wtf/crews">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="site-bg" aria-hidden="true"></div>
+
+  <marquee class="ticker" scrollamount="10">NEED THREE MORE FOR TONIGHT? 🎮 &nbsp;&nbsp;|&nbsp;&nbsp; POST A CREW CALL. JOIN ONE. NO ACCOUNTS. &nbsp;&nbsp;|&nbsp;&nbsp; 🚧 CALLS EXPIRE ON THEIR OWN, LIKE PLANS 🚧</marquee>
+
+  <div class="container">
+    <a class="home-link" href="/">← back to the front page</a>
+    <h1 class="wordart wordart-small">find a <span>crew</span></h1>
+
+    <p class="subhead">
+      You have one friend and a four-player game. Post a call, say when, leave your Discord. Or grab someone else's. Calls disappear when the moment passes [or when you delete them].
+    </p>
+
+    <section class="hero crews-layout">
+      <div class="crews-board">
+        <div class="board-head">
+          <h2 class="col-title">Open calls <span class="count" id="crews-count">0</span></h2>
+          <button type="button" class="cta cta-small" id="crews-refresh">Refresh</button>
+        </div>
+        <div id="crews-status" class="signup-status" role="status" aria-live="polite"></div>
+        <div id="crews-list" class="crew-list"></div>
+        <p id="crews-empty" class="section-lede" hidden>Nobody's calling right now. Be the first, it's not weird.</p>
+      </div>
+
+      <form id="crew-form" class="card card-tilt-l crew-form" novalidate>
+        <span class="badge">Call a Crew™</span>
+        <h2>Call one</h2>
+
+        <label class="field">
+          Game
+          <select name="gameId" id="c-game">
+            <option value="">Any friendslop, surprise me</option>
+            <option value="__other">Something else (type it)</option>
+          </select>
+          <span class="field-error" data-for="gameId"></span>
+        </label>
+
+        <label class="field" id="c-other-field" hidden>
+          Which game
+          <input name="gameTitle" id="c-title" type="text" maxlength="80" placeholder="Lethal Company, Peak, that thing your friend made">
+          <span class="field-error" data-for="gameTitle"></span>
+        </label>
+
+        <div class="field-row">
+          <label class="field">
+            We have
+            <input name="have" id="c-have" type="number" min="1" max="15" value="1" required>
+            <span class="field-error" data-for="have"></span>
+          </label>
+          <label class="field">
+            We need
+            <input name="need" id="c-need" type="number" min="1" max="15" value="3" required>
+            <span class="field-error" data-for="need"></span>
+          </label>
+        </div>
+
+        <div class="field-row">
+          <label class="field">
+            When
+            <select name="when" id="c-when">
+              <option value="now">Right now</option>
+              <option value="tonight" selected>Tonight</option>
+              <option value="tomorrow">Tomorrow</option>
+              <option value="weekend">This weekend</option>
+              <option value="whenever">Whenever</option>
+            </select>
+            <span class="field-error" data-for="when"></span>
+          </label>
+          <label class="field">
+            Platform
+            <select name="platform" id="c-platform">
+              <option value="any">Any</option>
+              <option value="pc">PC</option>
+              <option value="console">Console</option>
+              <option value="browser">Browser</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="field-row">
+          <label class="field">
+            Time details <span class="optional">(optional)</span>
+            <input name="whenNote" id="c-whennote" type="text" maxlength="60" placeholder="9pm eastern, after the kids sleep">
+            <span class="field-error" data-for="whenNote"></span>
+          </label>
+          <label class="field">
+            Region <span class="optional">(optional)</span>
+            <input name="region" id="c-region" type="text" maxlength="30" placeholder="NA East, EU, anywhere">
+            <span class="field-error" data-for="region"></span>
+          </label>
+        </div>
+
+        <label class="field">
+          How to reach you
+          <select name="contactType" id="c-contacttype">
+            <option value="discord">Discord username</option>
+            <option value="link">Invite link</option>
+            <option value="other">Something else</option>
+          </select>
+          <input name="contact" id="c-contact" type="text" maxlength="120" required placeholder="your.discord.name">
+          <span class="hint" id="c-contact-hint">Shown publicly on the call, that's how people find you. Delete the call when you're full.</span>
+          <span class="field-error" data-for="contact"></span>
+        </label>
+
+        <label class="field">
+          Note <span class="optional">(optional)</span>
+          <input name="note" id="c-note" type="text" maxlength="200" placeholder="mic required · we are bad at this · no yelling at the new guy">
+          <span class="field-error" data-for="note"></span>
+        </label>
+
+        <label class="hp" aria-hidden="true">
+          Leave this empty
+          <input type="text" name="website" id="c-website" tabindex="-1" autocomplete="off">
+        </label>
+
+        <button type="submit" class="cta cta-wide">Put the call out</button>
+        <div id="crew-form-status" class="signup-status" role="status" aria-live="polite"></div>
+      </form>
+    </section>
+
+    <p class="fineprint">© 2026 friendslop.wtf — Made with friends. Be decent in lobbies.</p>
+  </div>
+
+  <script src="js/crews.js"></script>
+</body>
+</html>
