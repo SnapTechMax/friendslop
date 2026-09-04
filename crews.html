@@ -24,6 +24,7 @@
     <a href="/top">Top Slop</a>
     <a href="/submit">Post a Game</a>
     <a href="/crews" class="is-active" aria-current="page">Find a Crew</a>
+    <span class="nav-user" id="nav-user"></span>
   </nav>
 
   <div class="container">
@@ -44,7 +45,8 @@
         <p id="crews-empty" class="section-lede" hidden>Nobody's calling right now. Be the first, it's not weird.</p>
       </div>
 
-      <form id="crew-form" class="card card-tilt-l crew-form" novalidate>
+      <section id="crew-gate" class="card card-tilt-l gate-card" hidden></section>
+      <form id="crew-form" class="card card-tilt-l crew-form" novalidate hidden>
         <span class="badge">Call a Crew™</span>
         <h2>Call one</h2>
 
@@ -143,6 +145,7 @@
     <p class="fineprint">© 2026 friendslop.wtf — Made with friends. Be decent in lobbies.</p>
   </div>
 
+  <script src="js/auth.js"></script>
   <script src="js/crews.js"></script>
 </body>
 </html>

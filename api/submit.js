@@ -1,14 +1,15 @@
-// POST /api/submit  (multipart form)
+// POST /api/submit  (multipart form, logged in)
 // Saves a game submission to Vercel Blob as submissions/<id>.json, plus an
 // optional cover image at covers/<id>.<ext>. Everything starts as "pending".
+// The contact email is the account's email.
 
 import { randomBytes } from 'node:crypto';
 import { put } from '@vercel/blob';
+import { requireUser } from '../lib/auth.js';
 import { classifyGameUrl } from '../lib/links.js';
 
 const MAX_COVER_BYTES = 2 * 1024 * 1024;
 const IMAGE_EXT = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp' };
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const TAG_RE = /^[a-z0-9][a-z0-9 -]{0,19}$/;
 
 function json(body, status = 200) {
@@ -31,6 +32,10 @@ function parseTags(raw) {
 }
 
 export async function POST(request) {
+  const auth = await requireUser(request);
+  if (auth.response) return auth.response;
+  const user = auth.user;
+
   let form;
   try {
     form = await request.formData();
@@ -45,7 +50,7 @@ export async function POST(request) {
   const url = field(form, 'url');
   const blurb = field(form, 'blurb');
   const devName = field(form, 'devName');
-  const email = field(form, 'email').toLowerCase();
+  const email = user.email;
   const credit = field(form, 'credit');
   const onBehalf = form.get('onBehalf') === 'on';
   const confirm = form.get('confirm') === 'on';
@@ -62,7 +67,6 @@ export async function POST(request) {
   if (!Number.isInteger(maxPlayers) || maxPlayers < 1 || maxPlayers > 99) errors.maxPlayers = 'Maximum players: a number from 1 to 99.';
   if (!errors.minPlayers && !errors.maxPlayers && maxPlayers < minPlayers) errors.maxPlayers = 'Max has to be at least the min.';
   if (!devName || devName.length > 60) errors.devName = 'Who made it? 60 characters or fewer.';
-  if (!EMAIL_RE.test(email) || email.length > 254) errors.email = 'That does not look like an email address.';
   if (onBehalf && (!credit || credit.length > 60)) errors.credit = 'If you are posting for a friend, tell us who to credit.';
   if (!confirm) errors.confirm = 'You have to tick the box.';
 
@@ -103,6 +107,8 @@ export async function POST(request) {
       tags,
       devName,
       email,
+      userId: user.id,
+      userName: user.name,
       onBehalf,
       credit: onBehalf ? credit : '',
       cover: coverPath,

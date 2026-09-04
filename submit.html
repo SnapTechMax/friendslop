@@ -24,6 +24,7 @@
     <a href="/top">Top Slop</a>
     <a href="/submit" class="is-active" aria-current="page">Post a Game</a>
     <a href="/crews">Find a Crew</a>
+    <span class="nav-user" id="nav-user"></span>
   </nav>
 
   <div class="container">
@@ -33,7 +34,9 @@
       A link, a blurb, how many players. That's it. We look at it, then it goes up [usually within a few days, it's a small team, hi].
     </p>
 
-    <section class="hero submit-layout">
+    <section id="submit-gate" class="card card-tilt-r gate-card" hidden></section>
+
+    <section class="hero submit-layout" id="submit-section" hidden>
       <form id="submit-form" class="card card-tilt-r submit-form" enctype="multipart/form-data" novalidate>
         <span class="badge">Submission Form™</span>
 
@@ -87,12 +90,7 @@
           <span class="field-error" data-for="devName"></span>
         </label>
 
-        <label class="field">
-          Contact email
-          <input name="email" id="f-email" type="email" maxlength="254" required placeholder="you@example.com" autocomplete="email">
-          <span class="hint">Never shown publicly. We use it to tell you when it's up, or if the link is broken.</span>
-          <span class="field-error" data-for="email"></span>
-        </label>
+        <p class="posting-as" id="posting-as"></p>
 
         <label class="check">
           <input type="checkbox" name="onBehalf" id="f-behalf">
@@ -163,6 +161,7 @@
     <p class="fineprint">© 2026 friendslop.wtf — Made with friends. Be decent in lobbies.</p>
   </div>
 
+  <script src="js/auth.js"></script>
   <script src="js/submit.js"></script>
 </body>
 </html>

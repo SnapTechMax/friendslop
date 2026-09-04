@@ -53,6 +53,11 @@ Then visit http://localhost:4173.
 - `lib/submissions.js` — shared blob helpers and the approved-index rebuild
 - `lib/mail.js` — the approval email and the Resend call
 - `lib/links.js` — which game links are allowed (itch.io and Steam) and which store a link is
+- `api/auth.js` — register, login, logout, verify, reset, change password, OAuth start and callback
+- `lib/auth.js` — password hashing, sessions, cookies, one-time tokens, rate limits
+- `lib/oauth.js` — Discord, Google, and GitHub provider config and token exchange
+- `login.html` / `js/login.js`, `reset.html`, `verify.html` — the account pages
+- `js/auth.js` — shared: who am I, the nav slot, and the "log in first" gate
 - `api/vote.js` — toggles an upvote on an approved game
 - `lib/votes.js` — one-per-person toggle storage, used by votes and crew "I'm in"
 - `crews.html` / `js/crews.js` — the crew board at `/crews`
@@ -72,9 +77,33 @@ curl -H "Authorization: Bearer $SIGNUP_ADMIN_KEY" https://friendslop.wtf/api/sig
 
 The key is the `SIGNUP_ADMIN_KEY` environment variable on the Vercel project. `vercel env pull .env.local` copies it and the blob token into a local `.env.local`, which is gitignored.
 
+## Accounts
+
+Posting a game, calling a crew, joining one, reporting one, and voting all need an account. Reading, the leaderboard, and the newsletter signup don't. Everything lives in `api/auth.js` behind `?action=`, with helpers in `lib/auth.js` and `lib/oauth.js`.
+
+**Email and password.** Sign up with a display name, an email, and a password of 8+ characters. Passwords are hashed with scrypt (N=2^15, r=8, p=1, 16-byte salt, 64-byte key) and compared in constant time. Sessions are random 256-bit tokens stored server-side under `sessions/<user>/`, hashed at rest, sent as an `HttpOnly; Secure; SameSite=Lax` cookie for 30 days. Every cookie-authenticated write must carry `X-Requested-With: fetch`, which a cross-site form can't add, so that's the CSRF check. Login is limited to 10 attempts per IP and email per 15 minutes; sign-ups to 10 per IP per hour. Email uniqueness is enforced by writing `emails/<sha256>.json` with overwrite disabled.
+
+**Verification and reset** go out through the same Resend setup as approval emails. Verification links last 24 hours, reset links one hour, both single-use. Resetting the password logs out every other session. Until `RESEND_API_KEY` and `MAIL_FROM` are set, new accounts are marked verified on creation (there is nothing to verify with) and the forgot-password form says so. Once mail is on, unverified accounts can log in but can't post until they click the link; "Resend" lives on `/login`.
+
+**OAuth2** uses the authorization-code flow with PKCE and a state cookie. Providers switch on when both variables exist:
+
+| Provider | Variables                                            | Redirect URI to register with the provider   |
+| -------- | ---------------------------------------------------- | -------------------------------------------- |
+| Discord  | `OAUTH_DISCORD_CLIENT_ID`, `OAUTH_DISCORD_CLIENT_SECRET` | `https://friendslop.wtf/auth/callback/discord` |
+| Google   | `OAUTH_GOOGLE_CLIENT_ID`, `OAUTH_GOOGLE_CLIENT_SECRET`   | `https://friendslop.wtf/auth/callback/google`  |
+| GitHub   | `OAUTH_GITHUB_CLIENT_ID`, `OAUTH_GITHUB_CLIENT_SECRET`   | `https://friendslop.wtf/auth/callback/github`  |
+
+Create the app in the provider's developer console (Discord Developer Portal, Google Cloud Console OAuth client, GitHub Developer Settings OAuth app), paste the redirect URI above, then `vercel env add` the two variables and redeploy. `/login` shows a button per configured provider. On callback, a provider account already linked logs straight in; otherwise the provider's email is matched to an existing account only if the provider says it is verified, or a new account is created. A provider that returns no email, or an unverified one, is refused with a message.
+
+`SITE_URL` (default `https://friendslop.wtf`) is the base for email links and OAuth redirect URIs.
+
+**Pages:** `/login` (log in, sign up, forgot password, and the account card with log out, log out everywhere, change password, resend verification), `/verify?token=`, `/reset?token=`. The tab strip shows "Log in" or your name and a "Log out" button.
+
+**What it changes elsewhere.** Submissions take the contact email from the account and record who posted. Crew calls belong to the account (no more delete tokens), the three-open-calls limit and the first-post hold are per account, and "by name" shows on the card. Votes, "I'm in", and reports are one per account instead of one per IP, so shared networks no longer collide. `VOTE_SALT` is no longer used.
+
 ## Game submissions
 
-`/submit` posts a multipart form to `/api/submit`. The function validates every field, drops honeypot hits, accepts only itch.io game pages and Steam store pages as the link (`lib/links.js`; no zips, no other hosts, so nobody has to open an unknown executable), and writes `submissions/<id>.json` to the same Blob store, plus `covers/<id>.<ext>` when a cover image was attached (PNG, JPG, GIF, or WebP under 2MB). Every submission starts with `status: "pending"`. Nothing is shown publicly yet.
+`/submit` posts a multipart form to `/api/submit` for the logged-in account. The function validates every field, drops honeypot hits, accepts only itch.io game pages and Steam store pages as the link (`lib/links.js`; no zips, no other hosts, so nobody has to open an unknown executable), and writes `submissions/<id>.json` to the same Blob store, plus `covers/<id>.<ext>` when a cover image was attached (PNG, JPG, GIF, or WebP under 2MB). Every submission starts with `status: "pending"`. Nothing is shown publicly yet.
 
 A submission record looks like:
 
@@ -90,6 +119,8 @@ A submission record looks like:
   "tags": ["physics", "horror"],
   "devName": "me and dave",
   "email": "dev@example.com",
+  "userId": "u_mtn...",
+  "userName": "dave",
   "onBehalf": false,
   "credit": "",
   "cover": "covers/mtn9phtp-503ce1.png",
@@ -143,24 +174,24 @@ Every public page has a tab strip under the ticker: Front page (`/`), Top Slop (
 
 Every approved game on the front page has an upvote button. `POST /api/vote` with `{ "id": "<game id>" }` toggles the caller's vote and returns `{ ok, voted, count }`. Only games in the approved index can be voted on.
 
-There are no accounts. A voter is a salted SHA-256 hash of the request IP (`VOTE_SALT` is the salt, set on the Vercel project), and each vote is one tiny blob at `votes/<game id>/<voter hash>.json`, so the pathname itself enforces one vote per person per game. Counts are exact: `/api/games` lists the `votes/` prefix and tallies, then sorts most votes first, newest approval first when tied. That list is cached at the edge for 30 seconds. The browser remembers what it voted for in localStorage so the arrow lights up on reload, but the server is the record.
+Voting needs an account. Each vote is one tiny blob at `votes/<game id>/<account id>.json`, so the pathname itself enforces one vote per person per game. Counts are exact: `/api/games` lists the `votes/` prefix and tallies, then sorts most votes first, newest approval first when tied. That list is cached at the edge for 30 seconds. The browser remembers what it voted for in localStorage so the arrow lights up on reload, but the server is the record.
 
-People behind one shared IP count as one voter. That's the trade-off for not making anyone sign up. Deleting a game from `/admin` deletes its votes too. `/api/stats` includes the total, and the admin list and CSV show each game's count.
+Deleting a game from `/admin` deletes its votes too. `/api/stats` includes the total, and the admin list and CSV show each game's count.
 
 ## Crew board
 
-`/crews` is a looking-for-group board. Anyone can post a crew call: which game (one from the front page, or anything typed in), how many they have and need, when, platform, region, how to reach them (a Discord username, an invite link, or free text), and a note. No accounts. Calls expire on their own based on "when": right now lasts 6 hours, tonight 18, tomorrow 36, this weekend 96, whenever a week. Expired calls drop out of the list immediately and get deleted a day later by the public list endpoint itself, so there is no cron.
+`/crews` is a looking-for-group board. Anyone with an account can post a crew call: which game (one from the front page, or anything typed in), how many they have and need, when, platform, region, how to reach them (a Discord username, an invite link, or free text), and a note. No accounts. Calls expire on their own based on "when": right now lasts 6 hours, tonight 18, tomorrow 36, this weekend 96, whenever a week. Expired calls drop out of the list immediately and get deleted a day later by the public list endpoint itself, so there is no cron.
 
 Endpoints:
 
 - `GET /api/crews` lists open calls, newest first, cached 15 seconds. `?all=1` with the admin key includes expired ones.
-- `POST /api/crew` posts a call and returns a one-time `token`. The browser keeps it in localStorage so the poster gets a "Delete my call" button. Three open calls per poster (salted IP hash), then a 429.
-- `DELETE /api/crew?id=<id>&token=<token>` lets the poster remove it; the admin key works without a token.
+- `POST /api/crew` posts a call for the logged-in account. Three open calls per account, then a 429.
+- `DELETE /api/crew?id=<id>` lets the poster (logged in) remove it; the admin key works too.
 - `POST /api/crew?action=in` with `{ "id" }` toggles "I'm in", one per person per call, same mechanism as votes. Cards show `in/need` and flip to "probably full" when it's reached. It's a signal, not a reservation; the contact method is where the crew actually forms.
 
-The first call from a new poster (salted IP hash, same as votes) is held off the public board for 15 minutes (`HOLD_MINUTES` in `lib/crews.js`). The poster sees it immediately with an "on hold" pill, via `GET /api/crews?mine=1`, which is never cached. Everyone else sees it when the hold ends. A `posters/<hash>.json` marker records that the poster has been seen, so their later calls go up instantly. Held calls don't count in stats and can't be joined yet. On `/admin`, held calls carry an amber pill and a "Release now" button (`POST /api/crew?action=release` with the admin key) for when you've looked and it's fine.
+The first call from a new account is held off the public board for 15 minutes (`HOLD_MINUTES` in `lib/crews.js`). The poster sees it immediately with an "on hold" pill, via `GET /api/crews?mine=1`, which is never cached. Everyone else sees it when the hold ends. A `posters/<account id>.json` marker records that the account has posted before, so their later calls go up instantly. Held calls don't count in stats and can't be joined yet. On `/admin`, held calls carry an amber pill and a "Release now" button (`POST /api/crew?action=release` with the admin key) for when you've looked and it's fine.
 
-Every card that isn't yours has a small "report" link with a reason picker (spam, scam, harassment, not a real call, other) and an optional note. `POST /api/crew?action=report` stores one report per person per call, same salted-IP mechanism as votes. At three reports the call disappears from the public board on its own. The admin Crews tab shows the count and the reasons, with "Clear reports" (`DELETE /api/crew?id=<id>&action=reports` with the admin key) to put it back, or Delete to remove it.
+Every card that isn't yours has a small "report" link with a reason picker (spam, scam, harassment, not a real call, other) and an optional note. `POST /api/crew?action=report` stores one report per account per call. At three reports the call disappears from the public board on its own. The admin Crews tab shows the count and the reasons, with "Clear reports" (`DELETE /api/crew?id=<id>&action=reports` with the admin key) to put it back, or Delete to remove it.
 
 Contact details are public by design, that's the whole point of the board. Invite links must be full http(s) URLs and open in a new tab; usernames are shown as text with a copy button. The Crews tab on `/admin` lists every call, open or expired, with a delete button.
 

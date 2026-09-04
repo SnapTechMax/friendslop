@@ -133,7 +133,7 @@
       ? el('div', { class: 'thumb' }, [el('img', { src: '/api/cover?id=' + encodeURIComponent(r.id), alt: '' })])
       : el('div', { class: 'thumb thumb-empty' }, [el('span', { text: 'NO COVER' })]);
 
-    var who = r.devName + (r.onBehalf ? ' (posted by a friend, credit: ' + (r.credit || '?') + ')' : '');
+    var who = r.devName + (r.onBehalf ? ' (posted by a friend, credit: ' + (r.credit || '?') + ')' : '') + (r.userName ? ' · account: ' + r.userName : '');
     var players = r.players ? (r.players.min === r.players.max ? r.players.min + ' players' : r.players.min + '–' + r.players.max + ' players') : '';
 
     var pills = [el('span', { class: 'pill pill-' + r.status, text: r.status })];
@@ -224,7 +224,7 @@
         el('span', { class: 'when', text: 'posted ' + ago(c.createdAt) })
       ]),
       el('h3', null, [c.gameUrl ? el('a', { href: c.gameUrl, target: '_blank', rel: 'noopener noreferrer', text: c.gameTitle }) : el('span', { text: c.gameTitle })]),
-      el('div', { class: 'meta', text: 'have ' + c.have + ' · need ' + c.need + ' · ' + c.platform + (c.region ? ' · ' + c.region : '') + (c.whenNote ? ' · ' + c.whenNote : '') }),
+      el('div', { class: 'meta', text: (c.by ? 'by ' + c.by + ' · ' : '') + 'have ' + c.have + ' · need ' + c.need + ' · ' + c.platform + (c.region ? ' · ' + c.region : '') + (c.whenNote ? ' · ' + c.whenNote : '') }),
       c.note ? el('p', { class: 'blurb', text: c.note }) : null,
       el('div', { class: 'meta meta-contact' }, [c.contactType + ': ', contact, ' · id ', el('code', { text: c.id })]),
       c.reportReasons && c.reportReasons.length ? el('ul', { class: 'report-list' }, c.reportReasons.map(function (r) {

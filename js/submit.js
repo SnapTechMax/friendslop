@@ -5,6 +5,13 @@
   var form = document.getElementById('submit-form');
   if (!form) return;
 
+  // Accounts only. The gate card explains; the form shows once logged in and verified.
+  var user = null;
+  window.fsAuth.gate(document.getElementById('submit-section'), document.getElementById('submit-gate'), 'post a game').then(function (u) {
+    user = u;
+    if (u) document.getElementById('posting-as').textContent = 'Posting as ' + u.name + '. We will email ' + u.email + ' when it goes up.';
+  });
+
   var status = document.getElementById('submit-status');
   var button = form.querySelector('button[type=submit]');
   var done = document.getElementById('submit-done');
@@ -81,7 +88,6 @@
     if (!(max >= 1 && max <= 99)) errors.maxPlayers = 'A number from 1 to 99.';
     else if (min >= 1 && max < min) errors.maxPlayers = 'Max has to be at least the min.';
     if (!val('devName')) errors.devName = 'Who made it?';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(val('email'))) errors.email = 'That does not look like an email address.';
     if (form.elements.onBehalf.checked && !val('credit')) errors.credit = 'Tell us who to credit.';
     if (!form.elements.confirm.checked) errors.confirm = 'You have to tick the box.';
 
@@ -107,15 +113,16 @@
     status.textContent = 'Sending...';
     button.disabled = true;
 
-    fetch('/api/submit', { method: 'POST', body: new FormData(form) })
+    fetch('/api/submit', { method: 'POST', headers: { 'X-Requested-With': 'fetch' }, body: new FormData(form) })
       .then(function (res) {
         return res.json().catch(function () { return { ok: false, message: 'The server said something we could not read.' }; });
       })
       .then(function (data) {
+        if (data && data.code === 'login_required') { location.href = window.fsAuth.loginUrl(); return; }
         if (data && data.ok) {
           document.getElementById('done-title').textContent = form.elements.title.value.trim();
           document.getElementById('done-id').textContent = data.id;
-          document.getElementById('done-email').textContent = form.elements.email.value.trim();
+          document.getElementById('done-email').textContent = user ? user.email : 'you';
           form.closest('section').hidden = true;
           done.hidden = false;
           done.scrollIntoView({ behavior: 'smooth', block: 'start' });

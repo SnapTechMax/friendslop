@@ -1,10 +1,10 @@
 // GET /api/crews          -> { crews: [...] }  open, unheld crew calls, newest first (edge cached)
-// GET /api/crews?mine=1   -> the caller's own calls that are still on hold (never cached)
+// GET /api/crews?mine=1   -> the logged-in account's own open calls, held or not (never cached)
 // GET /api/crews?all=1    -> every call including expired and held, admin key required
 
 import { isAdminKey, keyFromRequest } from '../lib/admin.js';
 import { isHeld, isOpen, publicCrew, readAllCrews, readReports, sweepExpired, withInCounts } from '../lib/crews.js';
-import { voterHash } from '../lib/votes.js';
+import { getUser } from '../lib/auth.js';
 
 export async function GET(request) {
   const url = new URL(request.url);
@@ -19,10 +19,11 @@ export async function GET(request) {
     all.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
 
     if (wantMine) {
-      const me = voterHash(request);
+      const auth = await getUser(request);
+      if (!auth) return Response.json({ crews: [], count: 0 }, { headers: { 'Cache-Control': 'no-store' } });
       const now = Date.now();
-      const held = all.filter((c) => c.posterHash === me && isOpen(c, now) && isHeld(c, now) && !c.hidden).map(publicCrew);
-      return Response.json({ crews: held, count: held.length }, { headers: { 'Cache-Control': 'no-store' } });
+      const own = all.filter((c) => c.userId === auth.user.id && isOpen(c, now)).map(publicCrew);
+      return Response.json({ crews: own, count: own.length }, { headers: { 'Cache-Control': 'no-store' } });
     }
 
     if (wantAll) {

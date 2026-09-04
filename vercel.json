@@ -1,3 +1,7 @@
 {
-  "cleanUrls": true
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/auth/start/:provider", "destination": "/api/auth?action=oauth&provider=:provider" },
+    { "source": "/auth/callback/:provider", "destination": "/api/auth?action=callback&provider=:provider" }
+  ]
 }

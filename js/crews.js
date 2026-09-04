@@ -13,14 +13,16 @@
   var WHEN = { now: 'right now', tonight: 'tonight', tomorrow: 'tomorrow', weekend: 'this weekend', whenever: 'whenever' };
   var PLATFORM = { any: 'any platform', pc: 'PC', console: 'console', browser: 'browser' };
 
-  // Calls this browser posted (id -> delete token) and calls it said "I'm in" to.
+  var A = window.fsAuth;
+  var user = null;
+  // Calls this account owns (from ?mine=1), plus what this browser said "I'm in" or "report" to.
   var mine = {};
   var ins = {};
   var reported = {};
-  try { mine = JSON.parse(localStorage.getItem('fs_crews') || '{}') || {}; } catch (e) { mine = {}; }
   try { ins = JSON.parse(localStorage.getItem('fs_crewin') || '{}') || {}; } catch (e) { ins = {}; }
   try { reported = JSON.parse(localStorage.getItem('fs_reports') || '{}') || {}; } catch (e) { reported = {}; }
   function save(key, obj) { try { localStorage.setItem(key, JSON.stringify(obj)); } catch (e) { /* fine */ } }
+  function needLogin() { location.href = A.loginUrl(); }
 
   function el(tag, attrs, children) {
     var node = document.createElement(tag);
@@ -72,10 +74,12 @@
     ]);
     btn.addEventListener('click', function () {
       if (btn.disabled) return;
+      if (!user) return needLogin();
       btn.disabled = true;
-      fetch('/api/crew?action=in', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: c.id }) })
+      fetch('/api/crew?action=in', { method: 'POST', headers: A.headers, body: JSON.stringify({ id: c.id }) })
         .then(function (r) { return r.json(); })
         .then(function (d) {
+          if (d && d.code === 'login_required') return needLogin();
           if (!d || !d.ok) { btn.classList.add('is-shake'); setTimeout(function () { btn.classList.remove('is-shake'); }, 400); return; }
           count.textContent = d.count + '/' + c.need;
           btn.classList.toggle('is-on', !!d.in);
@@ -109,14 +113,15 @@
     var panel = el('div', { class: 'report-form', hidden: '' }, [select, note, send, cancel, status]);
     var wrap = el('div', { class: 'report-wrap' }, [btn, panel]);
 
-    btn.addEventListener('click', function () { open = !open; panel.hidden = !open; if (open) select.focus(); });
+    btn.addEventListener('click', function () { if (!user) return needLogin(); open = !open; panel.hidden = !open; if (open) select.focus(); });
     cancel.addEventListener('click', function () { open = false; panel.hidden = true; });
     send.addEventListener('click', function () {
       send.disabled = true;
       status.textContent = 'Sending...';
-      fetch('/api/crew?action=report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: c.id, reason: select.value, note: note.value.trim() }) })
+      fetch('/api/crew?action=report', { method: 'POST', headers: A.headers, body: JSON.stringify({ id: c.id, reason: select.value, note: note.value.trim() }) })
         .then(function (r) { return r.json(); })
         .then(function (d) {
+          if (d && d.code === 'login_required') return needLogin();
           if (!d || !d.ok) { status.textContent = (d && d.message) || 'That did not work.'; send.disabled = false; return; }
           reported[c.id] = true; save('fs_reports', reported);
           wrap.textContent = '';
@@ -132,6 +137,7 @@
     var spots = c.need + (c.need === 1 ? ' spot' : ' spots');
     var when = WHEN[c.when] || c.when;
     var metaBits = [spots + ' · have ' + c.have, when + (c.whenNote ? ' (' + c.whenNote + ')' : ''), PLATFORM[c.platform] || c.platform];
+    if (c.by) metaBits.unshift('by ' + c.by);
     if (c.region) metaBits.push(c.region);
     var full = (c.in || 0) >= c.need;
 
@@ -172,11 +178,15 @@
   function load() {
     statusEl.textContent = 'Loading...';
     var pub = fetch('/api/crews', { cache: 'no-store' }).then(function (r) { return r.json(); });
-    // Your own first call sits on a short hold; only you can see it until then.
-    var held = fetch('/api/crews?mine=1', { cache: 'no-store' }).then(function (r) { return r.json(); }).catch(function () { return { crews: [] }; });
-    return Promise.all([pub, held]).then(function (res) {
-      var held = (res[1] && res[1].crews) || [];
+    // Your own calls come from the uncached ?mine=1: it marks what you can delete,
+    // and it's the only way to see your first call while it's on hold.
+    var own = fetch('/api/crews?mine=1', { cache: 'no-store' }).then(function (r) { return r.json(); }).catch(function () { return { crews: [] }; });
+    return Promise.all([pub, own]).then(function (res) {
+      var ownList = (res[1] && res[1].crews) || [];
+      mine = {};
+      ownList.forEach(function (c) { mine[c.id] = true; });
       var seen = {};
+      var held = ownList.filter(function (c) { return c.held; });
       held.forEach(function (c) { seen[c.id] = true; });
       crews = held.concat(((res[0] && res[0].crews) || []).filter(function (c) { return !seen[c.id]; }));
       statusEl.textContent = '';
@@ -187,11 +197,11 @@
   function remove(id) {
     if (!window.confirm('Delete this crew call?')) return;
     statusEl.textContent = 'Deleting...';
-    fetch('/api/crew?id=' + encodeURIComponent(id) + '&token=' + encodeURIComponent(mine[id] || ''), { method: 'DELETE' })
+    fetch('/api/crew?id=' + encodeURIComponent(id), { method: 'DELETE', headers: A.headers })
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (!d.ok) { statusEl.textContent = d.message || 'That did not work.'; return; }
-        delete mine[id]; save('fs_crews', mine);
+        delete mine[id];
         crews = crews.filter(function (c) { return c.id !== id; });
         statusEl.textContent = 'Deleted. Have fun.';
         render();
@@ -250,11 +260,12 @@
     };
     formStatus.textContent = 'Putting it out...';
     button.disabled = true;
-    fetch('/api/crew', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+    fetch('/api/crew', { method: 'POST', headers: A.headers, body: JSON.stringify(payload) })
       .then(function (r) { return r.json().catch(function () { return { ok: false, message: 'The server said something we could not read.' }; }); })
       .then(function (d) {
+        if (d && d.code === 'login_required') return needLogin();
         if (d && d.ok && d.crew) {
-          mine[d.id] = d.token; save('fs_crews', mine);
+          mine[d.id] = true;
           crews.unshift(d.crew);
           render();
           form.reset(); toggleOther(); contactHint();
@@ -272,5 +283,5 @@
   });
 
   document.getElementById('crews-refresh').addEventListener('click', load);
-  load();
+  A.gate(form, document.getElementById('crew-gate'), 'call a crew').then(function (u) { user = u; load(); });
 })();

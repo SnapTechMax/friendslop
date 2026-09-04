@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>New password — friendslop.wtf</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="site-bg" aria-hidden="true"></div>
+  <marquee class="ticker" scrollamount="10">NEW PASSWORD TIME 🎮 &nbsp;&nbsp;|&nbsp;&nbsp; LONGER BEATS WEIRDER &nbsp;&nbsp;|&nbsp;&nbsp; 🚧 THIS LINK WORKS ONCE 🚧</marquee>
+  <nav class="site-nav" aria-label="Site">
+    <a href="/">Front page</a>
+    <a href="/top">Top Slop</a>
+    <a href="/submit">Post a Game</a>
+    <a href="/crews">Find a Crew</a>
+    <span class="nav-user" id="nav-user"></span>
+  </nav>
+  <div class="container">
+    <h1 class="wordart wordart-small">new <span>password</span></h1>
+    <section class="card card-tilt-r auth-card">
+      <span class="badge">Reset™</span>
+      <form id="reset-form" novalidate>
+        <label class="field">
+          New password
+          <input name="password" type="password" autocomplete="new-password" minlength="8" required>
+          <span class="hint">8 characters or more.</span>
+          <span class="field-error" data-for="password"></span>
+        </label>
+        <button type="submit" class="cta cta-wide">Set it</button>
+        <div id="reset-status" class="signup-status" role="status" aria-live="polite"></div>
+      </form>
+    </section>
+    <p class="fineprint">© 2026 friendslop.wtf — Made with friends. Be decent in lobbies.</p>
+  </div>
+  <script src="js/auth.js"></script>
+  <script>
+    (function () {
+      var token = new URLSearchParams(location.search).get('token') || '';
+      var form = document.getElementById('reset-form');
+      var status = document.getElementById('reset-status');
+      if (!token) { status.textContent = 'This page needs the link from the email.'; form.querySelector('button').disabled = true; }
+      form.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        status.textContent = 'Setting...';
+        window.fsAuth.post('reset', { token: token, password: form.elements.password.value }).then(function (d) {
+          if (d.ok) { status.textContent = 'Done. You are logged in. Off you go.'; setTimeout(function () { location.href = '/'; }, 1200); return; }
+          status.textContent = d.message || 'That did not work.';
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

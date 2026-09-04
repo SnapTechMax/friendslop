@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Log in — friendslop.wtf</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="site-bg" aria-hidden="true"></div>
+
+  <marquee class="ticker" scrollamount="10">LOG IN OR SIGN UP 🎮 &nbsp;&nbsp;|&nbsp;&nbsp; EMAIL AND A PASSWORD, OR A BUTTON &nbsp;&nbsp;|&nbsp;&nbsp; 🚧 WE STORE A HASH, NOT YOUR PASSWORD. WE ARE NOT ANIMALS 🚧</marquee>
+
+  <nav class="site-nav" aria-label="Site">
+    <a href="/">Front page</a>
+    <a href="/top">Top Slop</a>
+    <a href="/submit">Post a Game</a>
+    <a href="/crews">Find a Crew</a>
+    <span class="nav-user" id="nav-user"></span>
+  </nav>
+
+  <div class="container">
+    <h1 class="wordart wordart-small">who <span>are you</span></h1>
+
+    <section class="card card-tilt-r auth-card">
+      <div class="tabs auth-tabs" role="tablist">
+        <button type="button" class="tab is-active" data-pane="login" role="tab">Log in</button>
+        <button type="button" class="tab" data-pane="signup" role="tab">Sign up</button>
+      </div>
+
+      <div id="auth-notice" class="signup-status" role="status" aria-live="polite"></div>
+
+      <div id="oauth" class="oauth-row" hidden>
+        <span class="oauth-label">One button:</span>
+        <span id="oauth-buttons"></span>
+        <span class="oauth-or">or</span>
+      </div>
+
+      <form id="login-form" class="auth-pane" novalidate>
+        <label class="field">
+          Email
+          <input name="email" type="email" autocomplete="email" required>
+          <span class="field-error" data-for="email"></span>
+        </label>
+        <label class="field">
+          Password
+          <input name="password" type="password" autocomplete="current-password" required>
+          <span class="field-error" data-for="password"></span>
+        </label>
+        <button type="submit" class="cta cta-wide">Log in</button>
+        <div class="auth-links">
+          <button type="button" class="linkish" id="show-forgot">Forgot the password?</button>
+        </div>
+      </form>
+
+      <form id="signup-form" class="auth-pane" hidden novalidate>
+        <label class="field">
+          What should we call you
+          <input name="name" type="text" autocomplete="nickname" maxlength="30" required placeholder="dave, or DaveDoesPhysics, or dave (real)">
+          <span class="hint">Shown next to what you post. 2 to 30 characters.</span>
+          <span class="field-error" data-for="name"></span>
+        </label>
+        <label class="field">
+          Email
+          <input name="email" type="email" autocomplete="email" required>
+          <span class="hint">We use it to verify you and to tell devs when their game goes up. Never shown publicly.</span>
+          <span class="field-error" data-for="email"></span>
+        </label>
+        <label class="field">
+          Password
+          <input name="password" type="password" autocomplete="new-password" minlength="8" required>
+          <span class="hint">8 characters or more. Longer beats weirder.</span>
+          <span class="field-error" data-for="password"></span>
+        </label>
+        <label class="hp" aria-hidden="true">Leave this empty <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+        <button type="submit" class="cta cta-wide">Make the account</button>
+      </form>
+
+      <form id="forgot-form" class="auth-pane" hidden novalidate>
+        <h2>Reset it</h2>
+        <label class="field">
+          Email
+          <input name="email" type="email" autocomplete="email" required>
+          <span class="field-error" data-for="email"></span>
+        </label>
+        <button type="submit" class="cta cta-wide">Send a reset link</button>
+        <div class="auth-links"><button type="button" class="linkish" id="show-login">Back to log in</button></div>
+      </form>
+
+      <div id="auth-status" class="signup-status" role="status" aria-live="polite"></div>
+    </section>
+
+    <section id="account-card" class="card card-tilt-l auth-card" hidden>
+      <span class="badge">Logged In™</span>
+      <h2 id="acct-name">You</h2>
+      <p id="acct-line"></p>
+      <div id="acct-verify" hidden>
+        <p>Your email isn't verified yet. That's what unlocks posting.</p>
+        <button type="button" class="cta" id="acct-resend">Resend the email</button>
+      </div>
+      <div class="review-actions">
+        <a class="cta cta-small" id="acct-next" href="/">Carry on</a>
+        <button type="button" class="cta cta-small cta-alt" id="acct-logout">Log out</button>
+        <button type="button" class="cta cta-small" id="acct-logout-all" title="Ends every session on every device">Log out everywhere</button>
+      </div>
+      <details class="acct-details">
+        <summary><b>Change password</b></summary>
+        <form id="password-form" novalidate>
+          <label class="field" id="current-field">Current password <input name="current" type="password" autocomplete="current-password"><span class="field-error" data-for="current"></span></label>
+          <label class="field">New password <input name="next" type="password" autocomplete="new-password" minlength="8" required><span class="field-error" data-for="next"></span></label>
+          <button type="submit" class="cta cta-small">Change it</button>
+          <div id="password-status" class="signup-status"></div>
+        </form>
+      </details>
+    </section>
+
+    <p class="fineprint">© 2026 friendslop.wtf — Made with friends. Be decent in lobbies.</p>
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script src="js/login.js"></script>
+</body>
+</html>

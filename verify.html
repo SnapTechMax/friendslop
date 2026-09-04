@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Verify email — friendslop.wtf</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="site-bg" aria-hidden="true"></div>
+  <marquee class="ticker" scrollamount="10">VERIFYING 🎮 &nbsp;&nbsp;|&nbsp;&nbsp; HOLD STILL &nbsp;&nbsp;|&nbsp;&nbsp; 🚧 THIS TAKES ONE SECOND 🚧</marquee>
+  <nav class="site-nav" aria-label="Site">
+    <a href="/">Front page</a>
+    <a href="/top">Top Slop</a>
+    <a href="/submit">Post a Game</a>
+    <a href="/crews">Find a Crew</a>
+    <span class="nav-user" id="nav-user"></span>
+  </nav>
+  <div class="container">
+    <h1 class="wordart wordart-small">verify <span>email</span></h1>
+    <section class="card card-tilt-r auth-card">
+      <span class="badge">Verify™</span>
+      <h2 id="verify-title">Checking the link...</h2>
+      <p id="verify-text"></p>
+      <a class="cta" id="verify-next" href="/" hidden>Carry on</a>
+    </section>
+    <p class="fineprint">© 2026 friendslop.wtf — Made with friends. Be decent in lobbies.</p>
+  </div>
+  <script src="js/auth.js"></script>
+  <script>
+    (function () {
+      var token = new URLSearchParams(location.search).get('token') || '';
+      var title = document.getElementById('verify-title'), text = document.getElementById('verify-text'), next = document.getElementById('verify-next');
+      if (!token) { title.textContent = 'No link.'; text.textContent = 'This page needs the link from the email.'; return; }
+      window.fsAuth.post('verify', { token: token }).then(function (d) {
+        if (d.ok) { title.textContent = 'Verified.'; text.textContent = 'Posting is unlocked. Go make something weird.'; next.hidden = false; return; }
+        title.textContent = 'That did not work.'; text.textContent = d.message || 'Try logging in and resending the email.';
+        next.textContent = 'Log in'; next.setAttribute('href', '/login'); next.hidden = false;
+      });
+    })();
+  </script>
+</body>
+</html>
