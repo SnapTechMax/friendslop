@@ -82,16 +82,18 @@
     });
   }
 
-  function review(id, status, note) {
-    say('Saving...');
+  function review(id, status, note, notify) {
+    say(notify ? 'Sending email...' : 'Saving...');
     return api('/api/review', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: id, status: status, note: note || '' })
+      body: JSON.stringify({ id: id, status: status, note: note || '', notify: !!notify })
     }).then(function (r) { return r.json(); }).then(function (d) {
       if (!d.ok) { say(d.message || 'That did not work.'); return; }
       all = all.map(function (r) { return r.id === id ? d.record : r; });
-      say('Saved. ' + d.approvedCount + ' live on the front page.');
+      var msg = 'Saved. ' + d.approvedCount + ' live on the front page.';
+      if (d.email) msg += d.email.sent ? ' Email sent.' : ' Email not sent: ' + d.email.error + '.';
+      say(msg);
       render();
     }).catch(function () { say('That did not work.'); });
   }
@@ -119,6 +121,7 @@
     if (r.status === 'approved') actions.push(el('button', { type: 'button', class: 'cta cta-small', text: 'Pull it', onclick: function () { review(r.id, 'pending', note()); } }));
     if (r.status !== 'rejected') actions.push(el('button', { type: 'button', class: 'cta cta-small cta-alt', text: 'Reject', onclick: function () { review(r.id, 'rejected', note()); } }));
     if (r.status === 'rejected') actions.push(el('button', { type: 'button', class: 'cta cta-small', text: 'Back to queue', onclick: function () { review(r.id, 'pending', note()); } }));
+    if (r.status === 'approved') actions.push(el('button', { type: 'button', class: 'cta cta-small cta-mail', text: r.notifiedAt ? 'Email again' : 'Send email', onclick: function () { review(r.id, 'approved', note(), true); } }));
     actions.push(el('button', { type: 'button', class: 'cta cta-small cta-danger', text: 'Delete', onclick: function () { remove(r.id, r.title); } }));
 
     var thumb = r.cover
@@ -131,6 +134,10 @@
     var pills = [el('span', { class: 'pill pill-' + r.status, text: r.status })];
     if (r.approvedAt) pills.push(el('span', { class: 'when', text: 'approved ' + ago(r.approvedAt) }));
     pills.push(el('span', { class: 'when', text: 'submitted ' + ago(r.submittedAt) }));
+    if (r.status === 'approved') {
+      if (r.notifiedAt) pills.push(el('span', { class: 'pill pill-mail', text: 'emailed ' + ago(r.notifiedAt) }));
+      else pills.push(el('span', { class: 'pill pill-nomail', text: 'not emailed', title: r.notifyError || '' }));
+    }
 
     return el('article', { class: 'card review review-' + r.status }, [
       el('div', { class: 'review-grid' }, [
@@ -140,6 +147,7 @@
           el('h3', null, [el('a', { href: r.url, target: '_blank', rel: 'noopener noreferrer', text: r.title })]),
           el('p', { class: 'blurb', text: r.blurb }),
           el('div', { class: 'meta', text: players + ' · by ' + who }),
+          r.status === 'approved' && !r.notifiedAt && r.notifyError ? el('div', { class: 'meta mail-error', text: 'Email not sent: ' + r.notifyError }) : null,
           el('div', { class: 'tags' }, (r.tags || []).map(function (t) { return el('span', { text: t }); })),
           el('div', { class: 'meta meta-contact' }, [
             el('a', { href: 'mailto:' + r.email, text: r.email }),

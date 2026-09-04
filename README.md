@@ -50,6 +50,7 @@ Then visit http://localhost:4173.
 - `api/stats.js` — public counts of submissions and approved games, used by the front page
 - `lib/admin.js` — shared admin key check
 - `lib/submissions.js` — shared blob helpers and the approved-index rebuild
+- `lib/mail.js` — the approval email and the Resend call
 - `vercel.json` — `cleanUrls` so `/submit.html` is reachable as `/submit`
 
 ## Signup form
@@ -103,6 +104,20 @@ Open `/admin`, paste the admin key, and you get the queue: Pending, Approved, Re
 Under the hood, `POST /api/review` with `{ "id", "status", "note" }` updates the record, and `DELETE /api/review?id=<id>` removes the record and its cover. After every change the function rebuilds `index/approved.json`, a single blob holding the public fields of every approved game, newest approval first. That's what `/api/games` serves, cached at the edge for 30 seconds, so a freshly approved game can take up to half a minute to appear.
 
 The front page fetches `/api/games` and, when there is at least one approved game, swaps the three placeholder cards for real ones. Titles and blurbs are rendered as text, never as HTML.
+
+### Approval emails
+
+Approving a game emails the contact address once, from `lib/mail.js` through [Resend](https://resend.com)'s REST API. It needs two environment variables on the Vercel project:
+
+| Variable         | Value                                                        |
+| ---------------- | ------------------------------------------------------------ |
+| `RESEND_API_KEY` | An API key from the Resend dashboard                         |
+| `MAIL_FROM`      | The sender, e.g. `friendslop.wtf <hello@friendslop.wtf>`      |
+| `MAIL_REPLY_TO`  | Optional. Where replies go if not the from address           |
+
+Set them with `vercel env add RESEND_API_KEY production` (and the same for `MAIL_FROM`), then redeploy. To send from an @friendslop.wtf address, add the domain in Resend and put the DNS records it gives you (DKIM, SPF, and a return-path CNAME) into Namecheap. Until the domain is verified, Resend only delivers to the email on the Resend account, from `onboarding@resend.dev`, which is enough to test with.
+
+Without the variables, approving still works. The admin card shows "not emailed" with the reason, and a "Send email" button retries once they are set. The record keeps `notifiedAt` on success or `notifyError` on failure. `POST /api/review` with `"notify": true` forces a resend.
 
 ```bash
 # approve from the command line

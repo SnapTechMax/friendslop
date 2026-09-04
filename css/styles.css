@@ -690,6 +690,10 @@ p, li { max-width: 80ch; }
 .pill-pending { background: var(--tang); }
 .pill-approved { background: var(--lime); }
 .pill-rejected { background: var(--pink); color: #fff; }
+.pill-mail { background: var(--grape-soft); }
+.pill-nomail { background: #fff; border-style: dashed; }
+.mail-error { color: #c4003f; font-weight: 700; }
+.cta-mail { background: linear-gradient(90deg, var(--grape-soft), var(--lime-soft)); }
 
 .when { font-size: 13px; color: #3a2a4a; }
 

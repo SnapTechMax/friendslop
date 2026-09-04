@@ -1,9 +1,11 @@
-// POST   /api/review  { id, status: "approved" | "rejected" | "pending", note? }
+// POST   /api/review  { id, status: "approved" | "rejected" | "pending", note?, notify? }
 // DELETE /api/review?id=<id>
 // Admin only. Updates a submission and rebuilds the public approved-games index.
+// Approving emails the dev once (or again when notify is true).
 
 import { del, list } from '@vercel/blob';
 import { isAdminKey, keyFromRequest } from '../lib/admin.js';
+import { sendApprovalEmail } from '../lib/mail.js';
 import { ID_RE, STATUSES, readJson, writeJson, rebuildApprovedIndex } from '../lib/submissions.js';
 
 function json(body, status = 200) {
@@ -17,6 +19,7 @@ export async function POST(request) {
   const id = String(body.id || '');
   const status = String(body.status || '');
   const note = typeof body.note === 'string' ? body.note.trim().slice(0, 500) : null;
+  const forceNotify = body.notify === true;
 
   if (!ID_RE.test(id)) return json({ ok: false, message: 'Bad id.' }, 400);
   if (!STATUSES.has(status)) return json({ ok: false, message: 'Status has to be pending, approved, or rejected.' }, 400);
@@ -33,9 +36,21 @@ export async function POST(request) {
     if (status === 'approved') record.approvedAt = record.approvedAt || now;
     else delete record.approvedAt;
 
+    // Email the dev the first time a game is approved. notify: true resends.
+    let email = null;
+    if (status === 'approved' && (forceNotify || !record.notifiedAt)) {
+      email = await sendApprovalEmail(record);
+      if (email.sent) {
+        record.notifiedAt = new Date().toISOString();
+        delete record.notifyError;
+      } else {
+        record.notifyError = email.error;
+      }
+    }
+
     await writeJson(path, record);
     const games = await rebuildApprovedIndex();
-    return json({ ok: true, id, status, record, approvedCount: games.length });
+    return json({ ok: true, id, status, record, approvedCount: games.length, email });
   } catch (err) {
     console.error('review failed', err);
     return json({ ok: false, message: 'Something broke on our end.' }, 500);
