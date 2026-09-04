@@ -11,7 +11,7 @@
     },
     {
       "source": "/u/:username",
-      "destination": "/u.html?username=:username"
+      "destination": "/u?username=:username"
     }
   ]
 }
