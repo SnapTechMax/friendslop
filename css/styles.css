@@ -34,6 +34,9 @@ html, body {
 
 *, *::before, *::after { box-sizing: inherit; }
 
+/* The hidden attribute must beat every display rule below */
+[hidden] { display: none !important; }
+
 /* Background: still loud, but it stays behind a veil so text is readable */
 .site-bg {
   position: fixed;
@@ -492,9 +495,112 @@ p, li { max-width: 80ch; }
 
 ::selection { background: var(--grape); color: var(--lime); }
 
+/* Submission page */
+.home-link {
+  display: inline-block;
+  margin: 14px 0 0;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--panel-strong);
+  border: 4px solid var(--line);
+  padding: 2px 10px;
+  text-decoration: none;
+  transform: rotate(-1deg);
+  box-shadow: 4px 4px 0 var(--line);
+}
+
+.home-link:hover { background: var(--lime); }
+
+.wordart-small { font-size: clamp(30px, 7.5vw, 80px); }
+
+.submit-layout { grid-template-columns: 1.35fr 0.65fr; }
+
+.submit-form h2 { margin-top: 22px; }
+.submit-form h2:first-of-type { margin-top: 10px; }
+
+.field textarea {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px;
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.4;
+  border: 6px inset var(--line);
+  background: #fff5fb;
+  color: var(--ink);
+  resize: vertical;
+}
+
+.field textarea:focus { outline: 4px solid var(--grape); outline-offset: 2px; }
+
+.field input[type="file"] {
+  border-style: dashed;
+  border-width: 4px;
+  background: #fff;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.hint {
+  display: block;
+  font-weight: 400;
+  font-size: 13px;
+  color: #3a2a4a;
+  margin-top: 4px;
+}
+
+.optional { font-weight: 400; font-size: 14px; color: #3a2a4a; }
+
+.field-error {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #c4003f;
+  min-height: 0;
+}
+
+.field-error:not(:empty) { margin-top: 4px; }
+
+.is-bad { outline: 4px solid #ff2d95 !important; outline-offset: 2px; }
+
+.check {
+  display: block;
+  font-weight: 700;
+  margin: 8px 0 12px;
+  padding: 8px 10px;
+  background: var(--panel);
+  border: 4px dotted var(--line);
+  cursor: pointer;
+}
+
+.check input { width: 18px; height: 18px; margin-right: 6px; vertical-align: -3px; accent-color: var(--grape); }
+
+.check-confirm { background: var(--lime-soft); border-style: dashed; }
+
+.aside-block { margin-top: 14px; }
+.steps-tight { font-size: 15px; padding: 12px 16px; }
+.steps-tight li + li { margin-top: 6px; }
+
+.done { margin-top: 26px; transform: rotate(-0.4deg); }
+.done code {
+  font-family: var(--mono);
+  font-weight: 900;
+  background: #fff;
+  border: 3px solid var(--line);
+  padding: 1px 6px;
+}
+
 /* Small screens */
 @media (max-width: 820px) {
-  .hero, .two-col { grid-template-columns: 1fr; }
+  .hero, .two-col, .submit-layout { grid-template-columns: 1fr; }
+  .field-row { grid-template-columns: 1fr; gap: 0; }
   .games { grid-template-columns: 1fr; }
   .sticker { display: none; }
   .loud-table { border-spacing: 4px; }

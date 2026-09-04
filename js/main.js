@@ -24,6 +24,14 @@
     }, 2200);
   }
 
+  // Live "games submitted" count from /api/stats. Falls back to whatever is in the HTML.
+  var games = document.getElementById('stat-games');
+  if (games && window.fetch) {
+    fetch('/api/stats').then(function (r) { return r.json(); }).then(function (d) {
+      if (d && typeof d.submissions === 'number') games.textContent = String(d.submissions);
+    }).catch(function () {});
+  }
+
   // Signup form. POSTs JSON { email, role, website } to the form's data-endpoint
   // (/api/signup in production). The server replies { ok, message }.
   var form = document.getElementById('signup-form');

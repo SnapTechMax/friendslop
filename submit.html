@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Post your slop — friendslop.wtf</title>
+  <meta name="description" content="Submit your friendslop co-op game to friendslop.wtf. A link, a blurb, how many players. We look at it, it goes up.">
+  <meta property="og:title" content="Post your slop — friendslop.wtf">
+  <meta property="og:description" content="Submit your friendslop game. A link, a blurb, how many players. We look at it, it goes up.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://friendslop.wtf/submit">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="site-bg" aria-hidden="true"></div>
+
+  <marquee class="ticker" scrollamount="10">SUBMISSIONS ARE OPEN 🎮 &nbsp;&nbsp;|&nbsp;&nbsp; WE LOOK AT EVERYTHING BEFORE IT GOES UP &nbsp;&nbsp;|&nbsp;&nbsp; 🚧 YOUR GAME CAN BE UNDER CONSTRUCTION. SO IS THE SITE. 🚧</marquee>
+
+  <div class="container">
+    <a class="home-link" href="/">← back to the front page</a>
+    <h1 class="wordart wordart-small">post your <span>slop</span></h1>
+
+    <p class="subhead">
+      A link, a blurb, how many players. That's it. We look at it, then it goes up [usually within a few days, it's a small team, hi].
+    </p>
+
+    <section class="hero submit-layout">
+      <form id="submit-form" class="card card-tilt-r submit-form" enctype="multipart/form-data" novalidate>
+        <span class="badge">Submission Form™</span>
+
+        <h2>The game</h2>
+
+        <label class="field">
+          Title
+          <input name="title" id="f-title" type="text" maxlength="80" required placeholder="Untitled Physics Thing">
+          <span class="field-error" data-for="title"></span>
+        </label>
+
+        <label class="field">
+          Where to get it
+          <input name="url" id="f-url" type="url" maxlength="500" required placeholder="https://yourname.itch.io/your-game">
+          <span class="hint">itch.io, Steam, a Google Drive folder, a GitHub release. Anything people can click.</span>
+          <span class="field-error" data-for="url"></span>
+        </label>
+
+        <label class="field">
+          What is it
+          <textarea name="blurb" id="f-blurb" rows="4" maxlength="500" required placeholder="Four of you run a haunted deli. The fridge is a liminal space. One of you is always the sandwich."></textarea>
+          <span class="hint"><span id="blurb-count">0</span>/500. Two sentences is plenty. Say what makes your friends yell.</span>
+          <span class="field-error" data-for="blurb"></span>
+        </label>
+
+        <div class="field-row">
+          <label class="field">
+            Min players
+            <input name="minPlayers" id="f-min" type="number" min="1" max="99" required value="2">
+            <span class="field-error" data-for="minPlayers"></span>
+          </label>
+          <label class="field">
+            Max players
+            <input name="maxPlayers" id="f-max" type="number" min="1" max="99" required value="4">
+            <span class="field-error" data-for="maxPlayers"></span>
+          </label>
+        </div>
+
+        <label class="field">
+          Tags
+          <input name="tags" id="f-tags" type="text" maxlength="120" placeholder="physics, horror, proximity chat">
+          <span class="hint">Comma separated, up to five. Letters, numbers, spaces, dashes.</span>
+          <span class="field-error" data-for="tags"></span>
+        </label>
+
+        <h2>The people</h2>
+
+        <label class="field">
+          Who made it
+          <input name="devName" id="f-dev" type="text" maxlength="60" required placeholder="Studio name, handle, or 'me and dave'">
+          <span class="field-error" data-for="devName"></span>
+        </label>
+
+        <label class="field">
+          Contact email
+          <input name="email" id="f-email" type="email" maxlength="254" required placeholder="you@example.com" autocomplete="email">
+          <span class="hint">Never shown publicly. We use it to tell you when it's up, or if the link is broken.</span>
+          <span class="field-error" data-for="email"></span>
+        </label>
+
+        <label class="check">
+          <input type="checkbox" name="onBehalf" id="f-behalf">
+          I didn't make this. My friend did and they keep not posting it.
+        </label>
+
+        <label class="field" id="credit-field" hidden>
+          Who to credit
+          <input name="credit" id="f-credit" type="text" maxlength="60" placeholder="Their name or handle">
+          <span class="hint">Make sure they're cool with it.</span>
+          <span class="field-error" data-for="credit"></span>
+        </label>
+
+        <h2>The picture</h2>
+
+        <label class="field">
+          Cover image <span class="optional">(optional)</span>
+          <input name="cover" id="f-cover" type="file" accept="image/png,image/jpeg,image/gif,image/webp">
+          <span class="hint">PNG, JPG, GIF, or WebP under 2MB. A screenshot is fine. A screenshot of a bug is better.</span>
+          <span class="field-error" data-for="cover"></span>
+        </label>
+
+        <label class="hp" aria-hidden="true">
+          Leave this empty
+          <input type="text" name="website" id="f-website" tabindex="-1" autocomplete="off">
+        </label>
+
+        <label class="check check-confirm">
+          <input type="checkbox" name="confirm" id="f-confirm" required>
+          This is friendslop. It's a small-team game, it's playable or nearly, and I'm allowed to post it.
+          <span class="field-error" data-for="confirm"></span>
+        </label>
+
+        <button type="submit" class="cta cta-wide">Send it</button>
+        <div id="submit-status" class="signup-status" role="status" aria-live="polite"></div>
+      </form>
+
+      <aside class="card card-tilt-l card-side">
+        <div class="terminal">
+          <b>&gt;&gt; SUBMISSION RULES &lt;&lt;</b><br>
+          Small team: yes<br>
+          Made with friends: ideally<br>
+          Battle pass: no<br>
+          Finished: optional
+        </div>
+        <div class="aside-block">
+          <h4 class="col-title">What happens next</h4>
+          <ol class="steps steps-tight">
+            <li>We open the link and play it, or try to.</li>
+            <li>It goes on the front page with your cover, blurb, and tags.</li>
+            <li>People find it, find a crew, and vote. We push the top ones everywhere we can.</li>
+            <li>You get an email either way.</li>
+          </ol>
+        </div>
+      </aside>
+    </section>
+
+    <section id="submit-done" class="card done" hidden>
+      <span class="badge">Slop received™</span>
+      <h2>It's in.</h2>
+      <p><b id="done-title"></b> is in the queue. Your submission id is <code id="done-id"></code>, keep it in case you need to yell at us about it.</p>
+      <p>We'll take a look and email <b id="done-email"></b> when it goes up.</p>
+      <a class="cta" href="/">Back to the front page</a>
+      <a class="cta cta-alt" href="/submit" id="done-again">Post another one</a>
+    </section>
+
+    <p class="fineprint">© 2026 friendslop.wtf — Made with friends. Be decent in lobbies.</p>
+  </div>
+
+  <script src="js/submit.js"></script>
+</body>
+</html>
