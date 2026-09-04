@@ -26,6 +26,7 @@
     document.getElementById('p-email').textContent = user.email + (user.emailVerified ? ' · verified' : ' · not verified');
     document.getElementById('p-verify').hidden = user.emailVerified;
     document.getElementById('current-field').hidden = !user.hasPassword;
+    document.getElementById('delete-password-field').hidden = !user.hasPassword;
     document.getElementById('t-role').textContent = user.role || 'member';
     document.getElementById('t-verified').textContent = user.emailVerified ? 'verified' : 'NOT verified';
     document.getElementById('t-providers').textContent = (user.hasPassword ? ['password'] : []).concat(user.providers || []).join(', ') || 'nothing yet';
@@ -77,6 +78,20 @@
     });
     document.getElementById('p-logout').addEventListener('click', function () { A.post('logout').then(function () { location.href = '/'; }); });
     document.getElementById('p-logout-all').addEventListener('click', function () { A.post('logout-all').then(function () { location.href = '/'; }); });
+
+    var df = document.getElementById('delete-form');
+    df.addEventListener('submit', function (ev) {
+      ev.preventDefault(); clearErrors(df);
+      var ds = document.getElementById('delete-status');
+      var v = {}; Array.prototype.forEach.call(df.elements, function (i) { if (i.name) v[i.name] = i.value; });
+      if ((v.confirm || '').trim().toLowerCase() !== 'delete') { showErrors(df, { confirm: 'Type delete to confirm.' }); return; }
+      if (!window.confirm('Delete your account and everything tied to it? There is no undo.')) return;
+      ds.textContent = 'Deleting...';
+      A.post('delete-account', v).then(function (d) {
+        if (d.ok) { ds.textContent = 'Gone. Thanks for playing.'; setTimeout(function () { location.href = '/'; }, 1200); return; }
+        showErrors(df, d.errors); ds.textContent = d.message || 'That did not work.';
+      });
+    });
 
     var pf = document.getElementById('password-form');
     pf.addEventListener('submit', function (ev) {

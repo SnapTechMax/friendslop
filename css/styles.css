@@ -863,6 +863,22 @@ p, li { max-width: 80ch; }
 .avail-ok { color: #1a7f2e; font-weight: 700; }
 .avail-bad { color: #c4003f; font-weight: 700; }
 
+/* Legal pages */
+.legal { max-width: 800px; margin: 26px auto 0; padding: 26px 30px; transform: none; font-size: 16px; line-height: 1.6; }
+.legal h2 { font-size: 21px; margin: 26px 0 6px; padding-bottom: 4px; border-bottom: 3px dashed var(--line); }
+.legal h2:first-of-type { margin-top: 6px; }
+.legal p, .legal li { max-width: none; }
+.legal ul { padding-left: 22px; }
+.legal li + li { margin-top: 6px; }
+.legal code { font-family: var(--mono); font-weight: 700; background: var(--lime-soft); padding: 0 4px; border: 2px solid var(--line); }
+.legal a { color: var(--grape); font-weight: 700; }
+.legal-meta { font-size: 14px; background: var(--grape-soft); border: 3px dashed var(--line); padding: 8px 10px; margin: 0 0 14px; }
+.legal-footer { margin-top: 26px; font-weight: 700; }
+.fineprint a { color: var(--grape); font-weight: 700; }
+.consent { margin: -4px 0 12px; }
+.danger-zone { border-top-color: #ff3b3b; }
+.danger-zone summary { color: #c4003f; }
+
 /* The back room */
 .key-card { max-width: 520px; margin: 26px auto 0; }
 

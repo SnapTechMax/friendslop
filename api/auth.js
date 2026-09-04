@@ -13,20 +13,22 @@
 // POST ?action=forgot                  { email }   always says ok
 // POST ?action=reset                   { token, password }
 // POST ?action=change-password         { current, next }   (logged in)
+// POST ?action=delete-account          { password?, confirm: "delete" }   (logged in) removes the account and its data
 // GET  ?action=oauth&provider=x&next=  302 to the provider   (rewritten from /auth/start/:provider)
 // GET  ?action=callback&provider=x     302 back to the site  (rewritten from /auth/callback/:provider)
 
 import { createHash, randomBytes } from 'node:crypto';
+import { del, list } from '@vercel/blob';
 import {
   EMAIL_RE, claimEmail, claimUsername, clearSessionCookie, clientIp, consumeToken, cookieHeader, createSession,
   destroyAllSessions, destroySession, findUserByEmail, getUser, hashPassword, hasFetchHeader, issueToken,
   newId, normEmail, oauthPath, parseCookies, passwordProblem, pickUsername, publicUser, releaseUsername, safeNext,
-  saveUser, sessionCookie, siteUrl, underLimit, usernameProblem, usernameTaken, userPath, verifyPassword
+  saveUser, sessionCookie, siteUrl, underLimit, usernameProblem, usernameTaken, userPath, verifyPassword, emailPath, usernamePath
 } from '../lib/auth.js';
-import { readAllCrews } from '../lib/crews.js';
+import { deleteCrew, posterPath, readAllCrews } from '../lib/crews.js';
 import { mailEnabled, resetEmail, sendMail, verificationEmail } from '../lib/mail.js';
 import { PROVIDERS, enabledProviders, exchangeCode, providerCreds, redirectUri } from '../lib/oauth.js';
-import { readAllSubmissions, readJson, writeJson } from '../lib/submissions.js';
+import { readAllSubmissions, readJson, rebuildApprovedIndex, writeJson } from '../lib/submissions.js';
 
 const OAUTH_COOKIE = 'fs_oauth';
 
@@ -187,6 +189,66 @@ async function changePassword(request, body) {
   await destroyAllSessions(auth.user.id);
   const cookie = sessionCookie(request, await createSession(auth.user.id, request));
   return json({ ok: true, user: publicUser(auth.user) }, 200, { 'Set-Cookie': cookie });
+}
+
+// ---- account deletion ----
+
+async function listAll(prefix) {
+  const out = [];
+  let cursor;
+  do {
+    const page = await list({ prefix, limit: 1000, cursor });
+    out.push(...page.blobs.map((b) => b.pathname));
+    cursor = page.hasMore ? page.cursor : undefined;
+  } while (cursor);
+  return out;
+}
+
+async function deleteAccount(request, body) {
+  const auth = await getUser(request);
+  if (!auth) return json({ ok: false, message: 'Log in first.' }, 401);
+  const user = auth.user;
+  if (String(body.confirm || '').trim().toLowerCase() !== 'delete') {
+    return json({ ok: false, message: 'Type delete to confirm.', errors: { confirm: 'Type delete to confirm.' } }, 400);
+  }
+  if (user.passwordHash && !(await verifyPassword(String(body.password || ''), user.passwordHash))) {
+    return json({ ok: false, message: 'Wrong password.', errors: { password: 'Wrong password.' } }, 401);
+  }
+
+  const id = user.id;
+  const removed = { crews: 0, submissionsUnlinked: 0, votes: 0, claims: 0, reports: 0 };
+
+  // Their crew calls, with joins and reports on them.
+  for (const c of (await readAllCrews()).filter((c) => c.userId === id)) { await deleteCrew(c.id); removed.crews++; }
+
+  // Their game submissions stay listed, but stop pointing at the account.
+  for (const r of (await readAllSubmissions()).filter((r) => r.userId === id)) {
+    delete r.userId; delete r.userName; r.email = ''; r.accountDeleted = true;
+    await writeJson('submissions/' + r.id + '.json', r);
+    removed.submissionsUnlinked++;
+  }
+
+  // Votes, "I'm in" joins, and reports they made on other people's things.
+  const suffix = '/' + id + '.json';
+  const doomed = [];
+  for (const [prefix, key] of [['votes/', 'votes'], ['crewin/', 'claims'], ['reports/', 'reports']]) {
+    const mine = (await listAll(prefix)).filter((p) => p.endsWith(suffix));
+    removed[key] = mine.length;
+    doomed.push(...mine);
+  }
+
+  // Identity: provider links, username and email claims, first-post marker, sessions, the record itself.
+  for (const [provider, link] of Object.entries(user.providers || {})) if (link && link.id) doomed.push(oauthPath(provider, link.id));
+  if (user.username) doomed.push(usernamePath(user.username));
+  doomed.push(emailPath(user.email), posterPath(id), userPath(id));
+  doomed.push(...(await listAll('sessions/' + id + '/')));
+
+  for (let i = 0; i < doomed.length; i += 50) {
+    try { await del(doomed.slice(i, i + 50)); } catch (err) { console.error('delete-account batch failed', err); }
+  }
+  if (removed.submissionsUnlinked) await rebuildApprovedIndex();
+
+  return json({ ok: true, removed }, 200, { 'Set-Cookie': clearSessionCookie(request) });
 }
 
 // ---- usernames ----
@@ -361,6 +423,7 @@ export async function POST(request) {
       case 'reset': return await reset(request, body);
       case 'change-password': return await changePassword(request, body);
       case 'set-username': return await setUsername(request, body);
+      case 'delete-account': return await deleteAccount(request, body);
       default: return json({ ok: false, message: 'Unknown action.' }, 404);
     }
   } catch (err) {

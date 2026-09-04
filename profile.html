@@ -66,6 +66,17 @@
           <button type="button" class="cta cta-small cta-alt" id="p-logout">Log out</button>
           <button type="button" class="cta cta-small" id="p-logout-all" title="Ends every session on every device">Log out everywhere</button>
         </div>
+
+        <details class="acct-details danger-zone">
+          <summary><b>Delete my account</b></summary>
+          <p class="meta">This removes your account, email, username, sign-in links, sessions, votes, joins, reports, and all your crew calls. Games you submitted stay listed but are unlinked from you and your email is removed from them; email us if you want a listing taken down too. There is no undo.</p>
+          <form id="delete-form" novalidate>
+            <label class="field" id="delete-password-field">Your password <input name="password" type="password" autocomplete="current-password"><span class="field-error" data-for="password"></span></label>
+            <label class="field">Type <code>delete</code> to confirm <input name="confirm" type="text" autocomplete="off" placeholder="delete"><span class="field-error" data-for="confirm"></span></label>
+            <button type="submit" class="cta cta-small cta-danger">Delete everything</button>
+            <div id="delete-status" class="signup-status"></div>
+          </form>
+        </details>
       </div>
 
       <aside class="card card-tilt-l card-side">
@@ -84,7 +95,7 @@
       </aside>
     </section>
 
-    <p class="fineprint">© 2026 friendslop.wtf — Made with friends. Be decent in lobbies.</p>
+    <p class="fineprint">© 2026 friendslop.wtf — Made with friends. Be decent in lobbies. · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
   </div>
 
   <script src="js/auth.js"></script>

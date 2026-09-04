@@ -104,6 +104,12 @@ Create the app in the provider's developer console (Discord Developer Portal, Go
 
 **What it changes elsewhere.** Submissions take the contact email from the account and record who posted. Crew calls belong to the account (no more delete tokens), the three-open-calls limit and the first-post hold are per account, and "by name" shows on the card. Votes, "I'm in", and reports are one per account instead of one per IP, so shared networks no longer collide. `VOTE_SALT` is no longer used.
 
+## Legal pages
+
+`/privacy` and `/terms` are static pages linked from every footer and from the sign-up form. The privacy policy is written to what Google's OAuth verification looks for: it names what the site receives from Google and Discord sign-in and what it does with it, carries the Google API Services User Data Policy "Limited Use" sentence, lists the third parties (Vercel, Resend, Google Fonts), gives retention periods, and points to a working delete-account control. Both pages use max@snaptechrepair.com as the contact; change that in the two HTML files if you'd rather use a site address. The terms' governing-law clause is generic on purpose; put a real jurisdiction in if you want one.
+
+**Account deletion.** `POST /api/auth?action=delete-account` with `{ confirm: "delete", password }` (password only if the account has one) removes the user record, email and username claims, provider links, sessions, first-post marker, all of the account's crew calls with their joins and reports, and every vote, join, and report the account made elsewhere. Game submissions are kept but unlinked (`userId` and `userName` removed, `email` blanked, `accountDeleted: true`) and the approved index is rebuilt. It's on the profile page under "Delete my account".
+
 ## Game submissions
 
 `/submit` posts a multipart form to `/api/submit` for the logged-in account. The function validates every field, drops honeypot hits, accepts only itch.io game pages and Steam store pages as the link (`lib/links.js`; no zips, no other hosts, so nobody has to open an unknown executable), and writes `submissions/<id>.json` to the same Blob store, plus `covers/<id>.<ext>` when a cover image was attached (PNG, JPG, GIF, or WebP under 2MB). Every submission starts with `status: "pending"`. Nothing is shown publicly yet.
