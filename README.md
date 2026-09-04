@@ -55,7 +55,7 @@ Then visit http://localhost:4173.
 - `lib/links.js` — which game links are allowed (itch.io and Steam) and which store a link is
 - `api/auth.js` — register, login, logout, verify, reset, change password, OAuth start and callback
 - `lib/auth.js` — password hashing, sessions, cookies, one-time tokens, rate limits
-- `lib/oauth.js` — Discord, Google, and GitHub provider config and token exchange
+- `lib/oauth.js` — Discord and Google provider config and token exchange
 - `login.html` / `js/login.js`, `profile.html` / `js/profile.js`, `reset.html`, `verify.html` — the account pages
 - `js/auth.js` — shared: who am I, the nav slot, and the "log in first" gate
 - `api/vote.js` — toggles an upvote on an approved game
@@ -89,15 +89,14 @@ Posting a game, calling a crew, joining one, reporting one, and voting all need 
 
 **Verification and reset** go out through the same Resend setup as approval emails. Verification links last 24 hours, reset links one hour, both single-use. Resetting the password logs out every other session. Until `RESEND_API_KEY` and `MAIL_FROM` are set, new accounts are marked verified on creation (there is nothing to verify with) and the forgot-password form says so. Once mail is on, unverified accounts can log in but can't post until they click the link; "Resend" lives on `/login`.
 
-**OAuth2** uses the authorization-code flow with PKCE and a state cookie. Providers switch on when both variables exist:
+**OAuth2** uses the authorization-code flow with PKCE and a state cookie, for Discord and Google. Providers switch on when both variables exist:
 
 | Provider | Variables                                            | Redirect URI to register with the provider   |
 | -------- | ---------------------------------------------------- | -------------------------------------------- |
 | Discord  | `OAUTH_DISCORD_CLIENT_ID`, `OAUTH_DISCORD_CLIENT_SECRET` | `https://friendslop.wtf/auth/callback/discord` |
 | Google   | `OAUTH_GOOGLE_CLIENT_ID`, `OAUTH_GOOGLE_CLIENT_SECRET`   | `https://friendslop.wtf/auth/callback/google`  |
-| GitHub   | `OAUTH_GITHUB_CLIENT_ID`, `OAUTH_GITHUB_CLIENT_SECRET`   | `https://friendslop.wtf/auth/callback/github`  |
 
-Create the app in the provider's developer console (Discord Developer Portal, Google Cloud Console OAuth client, GitHub Developer Settings OAuth app), paste the redirect URI above, then `vercel env add` the two variables and redeploy. `/login` shows a button per configured provider. On callback, a provider account already linked logs straight in; otherwise the provider's email is matched to an existing account only if the provider says it is verified, or a new account is created. A provider that returns no email, or an unverified one, is refused with a message.
+Create the app in the provider's developer console (Discord Developer Portal, Google Cloud Console OAuth client), paste the redirect URI above, then `vercel env add` the two variables and redeploy. `/login` shows a button per configured provider. On callback, a provider account already linked logs straight in; otherwise the provider's email is matched to an existing account only if the provider says it is verified, or a new account is created. A provider that returns no email, or an unverified one, is refused with a message.
 
 `SITE_URL` (default `https://friendslop.wtf`) is the base for email links and OAuth redirect URIs.
 

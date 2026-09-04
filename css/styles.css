@@ -849,7 +849,6 @@ p, li { max-width: 80ch; }
 .oauth-label, .oauth-or { font-weight: 700; }
 .oauth-discord { background: linear-gradient(90deg, #5865f2, #8a94ff); color: #fff; text-shadow: 1px 1px 0 var(--line); }
 .oauth-google { background: linear-gradient(90deg, #fff, #f1f1f1); }
-.oauth-github { background: linear-gradient(90deg, #24292f, #57606a); color: #fff; text-shadow: 1px 1px 0 var(--line); }
 .acct-details { margin-top: 14px; border-top: 3px dashed var(--line); padding-top: 10px; }
 .acct-details summary { cursor: pointer; }
 .gate-card { max-width: 620px; margin: 26px auto 0; }
