@@ -19,7 +19,7 @@ Small devs make weird, chaotic, "made-with-my-friends" games all the time and mo
 
 ## Status
 
-Landing page, a working signup form, and a working game submission form. Submissions land in a queue; there is no approval UI or public listing yet.
+Landing page, signup form, game submission form, a review queue at `/admin`, and approved games showing on the front page. No voting or crew-finding yet.
 
 ## Running it
 
@@ -40,11 +40,16 @@ Then visit http://localhost:4173.
 - `js/submit.js` — client-side validation and the multipart post for submissions
 - `api/signup.js` — saves a signup to Vercel Blob
 - `api/signups.js` — exports the signups, admin key required
+- `admin.html` — the review queue, served at `/admin`, unlocked with the admin key
+- `js/admin.js` — lists submissions and calls the review endpoint
 - `api/submit.js` — validates a game submission and saves it plus its cover image
 - `api/submissions.js` — exports the submissions, admin key required
+- `api/review.js` — approve, reject, pull, or delete a submission; rebuilds the approved index
+- `api/games.js` — public list of approved games, read by the front page
 - `api/cover.js` — streams a submission's cover image out of the private store
-- `api/stats.js` — public count of submissions, used by the front page
+- `api/stats.js` — public counts of submissions and approved games, used by the front page
 - `lib/admin.js` — shared admin key check
+- `lib/submissions.js` — shared blob helpers and the approved-index rebuild
 - `vercel.json` — `cleanUrls` so `/submit.html` is reachable as `/submit`
 
 ## Signup form
@@ -89,7 +94,21 @@ To see the queue, call `/api/submissions` with the admin key. JSON by default, `
 curl -H "Authorization: Bearer $SIGNUP_ADMIN_KEY" https://friendslop.wtf/api/submissions
 ```
 
-Covers are served at `/api/cover?id=<submission id>`. `/api/stats` returns `{ "submissions": <count> }` and is what the front page's "Games submitted" number reads from.
+Covers are served at `/api/cover?id=<submission id>`. `/api/stats` returns `{ "submissions": <count>, "approved": <count> }` and feeds the front page's lobby status box.
+
+## Reviewing submissions
+
+Open `/admin`, paste the admin key, and you get the queue: Pending, Approved, Rejected, All. Each card has Approve, Reject, Pull it (back to pending), Back to queue, and Delete, plus a private note field. The page remembers the key in localStorage until you hit "Forget key". It isn't linked from anywhere and carries a `noindex` tag.
+
+Under the hood, `POST /api/review` with `{ "id", "status", "note" }` updates the record, and `DELETE /api/review?id=<id>` removes the record and its cover. After every change the function rebuilds `index/approved.json`, a single blob holding the public fields of every approved game, newest approval first. That's what `/api/games` serves, cached at the edge for 30 seconds, so a freshly approved game can take up to half a minute to appear.
+
+The front page fetches `/api/games` and, when there is at least one approved game, swaps the three placeholder cards for real ones. Titles and blurbs are rendered as text, never as HTML.
+
+```bash
+# approve from the command line
+curl -X POST https://friendslop.wtf/api/review -H "Authorization: Bearer $SIGNUP_ADMIN_KEY" \
+  -H "Content-Type: application/json" -d '{"id":"<id>","status":"approved"}'
+```
 
 ## Local development
 

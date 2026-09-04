@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>The back room — friendslop.wtf</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="site-bg" aria-hidden="true"></div>
+
+  <marquee class="ticker" scrollamount="10">THE BACK ROOM 🎮 &nbsp;&nbsp;|&nbsp;&nbsp; APPROVE THE GOOD SLOP &nbsp;&nbsp;|&nbsp;&nbsp; REJECT THE BATTLE PASSES &nbsp;&nbsp;|&nbsp;&nbsp; 🚧 NOT LINKED FROM ANYWHERE. IF YOU FOUND THIS, HI. 🚧</marquee>
+
+  <div class="container">
+    <a class="home-link" href="/">← front page</a>
+    <h1 class="wordart wordart-small">the back <span>room</span></h1>
+
+    <section id="key-card" class="card card-tilt-r key-card">
+      <span class="badge">Staff Only™</span>
+      <h2>Say the password</h2>
+      <form id="key-form">
+        <label class="field">
+          Admin key
+          <input id="key-input" type="password" autocomplete="off" required placeholder="the SIGNUP_ADMIN_KEY">
+        </label>
+        <button class="cta" type="submit">Let me in</button>
+        <div id="key-status" class="signup-status" role="status" aria-live="polite"></div>
+      </form>
+    </section>
+
+    <section id="queue" hidden>
+      <div class="admin-bar">
+        <div class="tabs" role="tablist">
+          <button class="tab is-active" data-filter="pending" role="tab">Pending <span class="count" data-count="pending">0</span></button>
+          <button class="tab" data-filter="approved" role="tab">Approved <span class="count" data-count="approved">0</span></button>
+          <button class="tab" data-filter="rejected" role="tab">Rejected <span class="count" data-count="rejected">0</span></button>
+          <button class="tab" data-filter="all" role="tab">All <span class="count" data-count="all">0</span></button>
+        </div>
+        <div class="admin-tools">
+          <button class="cta cta-small" id="refresh" type="button">Refresh</button>
+          <button class="cta cta-small cta-alt" id="export-csv" type="button">CSV</button>
+          <button class="cta cta-small" id="logout" type="button">Forget key</button>
+        </div>
+      </div>
+      <div id="admin-status" class="signup-status" role="status" aria-live="polite"></div>
+      <div id="list" class="review-list"></div>
+      <p id="empty" class="section-lede" hidden>Nothing here. Go outside, or go post a game.</p>
+    </section>
+
+    <p class="fineprint">© 2026 friendslop.wtf — Made with friends. Be decent in lobbies.</p>
+  </div>
+
+  <script src="js/admin.js"></script>
+</body>
+</html>

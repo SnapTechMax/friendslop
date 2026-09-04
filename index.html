@@ -44,6 +44,7 @@
         <div class="terminal">
           <b>&gt;&gt; LOBBY STATUS &lt;&lt;</b><br>
           Games submitted: <span id="stat-games">0</span><br>
+          Games live: <span id="stat-live">0</span><br>
           Crews formed: <span id="stat-crews">0</span><br>
           Bugs shipped as features: <span id="stat-bugs" class="blink">15</span>
         </div>
@@ -59,10 +60,10 @@
 
     <div class="divider"></div>
 
-    <center><h3 class="section-title">Front page slop (soon)</h3></center>
-    <p class="section-lede">This is where the top games go. Right now it's where your game goes.</p>
+    <center><h3 class="section-title" id="games-title">Front page slop (soon)</h3></center>
+    <p class="section-lede" id="games-lede">This is where the top games go. Right now it's where your game goes.</p>
 
-    <div class="games">
+    <div class="games" id="games">
       <article class="game card">
         <div class="cover cover-a"><span>YOUR GAME HERE</span></div>
         <h4>Untitled Physics Thing</h4>

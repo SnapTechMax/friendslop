@@ -1,0 +1,229 @@
+// friendslop.wtf — the back room. Lists submissions and reviews them.
+// Everything is built with DOM APIs because titles and blurbs are user input.
+
+(function () {
+  var KEY_STORAGE = 'fs_admin_key';
+  var key = '';
+  var all = [];
+  var filter = 'pending';
+
+  var keyCard = document.getElementById('key-card');
+  var keyForm = document.getElementById('key-form');
+  var keyInput = document.getElementById('key-input');
+  var keyStatus = document.getElementById('key-status');
+  var queue = document.getElementById('queue');
+  var listEl = document.getElementById('list');
+  var emptyEl = document.getElementById('empty');
+  var statusEl = document.getElementById('admin-status');
+
+  function el(tag, attrs, children) {
+    var node = document.createElement(tag);
+    if (attrs) {
+      Object.keys(attrs).forEach(function (k) {
+        if (k === 'class') node.className = attrs[k];
+        else if (k === 'text') node.textContent = attrs[k];
+        else if (k.indexOf('on') === 0) node.addEventListener(k.slice(2), attrs[k]);
+        else node.setAttribute(k, attrs[k]);
+      });
+    }
+    (children || []).forEach(function (c) {
+      if (c === null || c === undefined) return;
+      node.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+    });
+    return node;
+  }
+
+  function ago(iso) {
+    if (!iso) return '';
+    var s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+    if (s < 60) return 'just now';
+    if (s < 3600) return Math.floor(s / 60) + 'm ago';
+    if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+    return Math.floor(s / 86400) + 'd ago';
+  }
+
+  function say(msg) { statusEl.textContent = msg || ''; }
+
+  function api(path, options) {
+    options = options || {};
+    options.headers = Object.assign({ Authorization: 'Bearer ' + key }, options.headers || {});
+    return fetch(path, options).then(function (res) {
+      if (res.status === 401) {
+        forgetKey();
+        keyStatus.textContent = 'That key did not work.';
+        throw new Error('unauthorized');
+      }
+      return res;
+    });
+  }
+
+  function load() {
+    say('Loading...');
+    return api('/api/submissions')
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        all = d.submissions || [];
+        keyCard.hidden = true;
+        queue.hidden = false;
+        say('');
+        render();
+      })
+      .catch(function (err) {
+        if (err.message !== 'unauthorized') say('Could not load the queue. Try refresh.');
+      });
+  }
+
+  function counts() {
+    var c = { pending: 0, approved: 0, rejected: 0, all: all.length };
+    all.forEach(function (r) { if (c[r.status] !== undefined) c[r.status] += 1; });
+    Object.keys(c).forEach(function (k) {
+      var span = document.querySelector('[data-count="' + k + '"]');
+      if (span) span.textContent = String(c[k]);
+    });
+  }
+
+  function review(id, status, note) {
+    say('Saving...');
+    return api('/api/review', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: id, status: status, note: note || '' })
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (!d.ok) { say(d.message || 'That did not work.'); return; }
+      all = all.map(function (r) { return r.id === id ? d.record : r; });
+      say('Saved. ' + d.approvedCount + ' live on the front page.');
+      render();
+    }).catch(function () { say('That did not work.'); });
+  }
+
+  function remove(id, title) {
+    if (!window.confirm('Delete "' + title + '" and its cover for good?')) return;
+    say('Deleting...');
+    api('/api/review?id=' + encodeURIComponent(id), { method: 'DELETE' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.ok) { say(d.message || 'That did not work.'); return; }
+        all = all.filter(function (r) { return r.id !== id; });
+        say('Deleted.');
+        render();
+      })
+      .catch(function () { say('That did not work.'); });
+  }
+
+  function card(r) {
+    var noteInput = el('input', { type: 'text', class: 'note-input', placeholder: 'Private note (optional)', maxlength: '500', value: r.note || '' });
+    var note = function () { return noteInput.value.trim(); };
+
+    var actions = [];
+    if (r.status !== 'approved') actions.push(el('button', { type: 'button', class: 'cta cta-small', text: 'Approve', onclick: function () { review(r.id, 'approved', note()); } }));
+    if (r.status === 'approved') actions.push(el('button', { type: 'button', class: 'cta cta-small', text: 'Pull it', onclick: function () { review(r.id, 'pending', note()); } }));
+    if (r.status !== 'rejected') actions.push(el('button', { type: 'button', class: 'cta cta-small cta-alt', text: 'Reject', onclick: function () { review(r.id, 'rejected', note()); } }));
+    if (r.status === 'rejected') actions.push(el('button', { type: 'button', class: 'cta cta-small', text: 'Back to queue', onclick: function () { review(r.id, 'pending', note()); } }));
+    actions.push(el('button', { type: 'button', class: 'cta cta-small cta-danger', text: 'Delete', onclick: function () { remove(r.id, r.title); } }));
+
+    var thumb = r.cover
+      ? el('div', { class: 'thumb' }, [el('img', { src: '/api/cover?id=' + encodeURIComponent(r.id), alt: '' })])
+      : el('div', { class: 'thumb thumb-empty' }, [el('span', { text: 'NO COVER' })]);
+
+    var who = r.devName + (r.onBehalf ? ' (posted by a friend, credit: ' + (r.credit || '?') + ')' : '');
+    var players = r.players ? (r.players.min === r.players.max ? r.players.min + ' players' : r.players.min + '–' + r.players.max + ' players') : '';
+
+    var pills = [el('span', { class: 'pill pill-' + r.status, text: r.status })];
+    if (r.approvedAt) pills.push(el('span', { class: 'when', text: 'approved ' + ago(r.approvedAt) }));
+    pills.push(el('span', { class: 'when', text: 'submitted ' + ago(r.submittedAt) }));
+
+    return el('article', { class: 'card review review-' + r.status }, [
+      el('div', { class: 'review-grid' }, [
+        thumb,
+        el('div', { class: 'review-body' }, [
+          el('div', { class: 'review-head' }, pills),
+          el('h3', null, [el('a', { href: r.url, target: '_blank', rel: 'noopener noreferrer', text: r.title })]),
+          el('p', { class: 'blurb', text: r.blurb }),
+          el('div', { class: 'meta', text: players + ' · by ' + who }),
+          el('div', { class: 'tags' }, (r.tags || []).map(function (t) { return el('span', { text: t }); })),
+          el('div', { class: 'meta meta-contact' }, [
+            el('a', { href: 'mailto:' + r.email, text: r.email }),
+            ' · ',
+            el('a', { href: r.url, target: '_blank', rel: 'noopener noreferrer', text: r.url }),
+            ' · id ',
+            el('code', { text: r.id })
+          ]),
+          el('div', { class: 'review-actions' }, actions.concat([noteInput]))
+        ])
+      ])
+    ]);
+  }
+
+  function render() {
+    counts();
+    var rows = all.filter(function (r) { return filter === 'all' || r.status === filter; });
+    rows.sort(function (a, b) { return String(b.submittedAt).localeCompare(String(a.submittedAt)); });
+    listEl.textContent = '';
+    rows.forEach(function (r) { listEl.appendChild(card(r)); });
+    emptyEl.hidden = rows.length > 0;
+  }
+
+  function forgetKey() {
+    key = '';
+    try { localStorage.removeItem(KEY_STORAGE); } catch (e) { /* fine */ }
+    queue.hidden = true;
+    keyCard.hidden = false;
+    keyInput.value = '';
+  }
+
+  // Tabs. The hash mirrors the tab so /admin#approved opens straight to it.
+  function selectTab(name) {
+    var tabs = document.querySelectorAll('.tab');
+    var found = false;
+    Array.prototype.forEach.call(tabs, function (t) {
+      var hit = t.getAttribute('data-filter') === name;
+      t.classList.toggle('is-active', hit);
+      if (hit) found = true;
+    });
+    if (!found) return selectTab('pending');
+    filter = name;
+    if (('#' + name) !== location.hash) history.replaceState(null, '', '#' + name);
+    render();
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (tab) {
+    tab.addEventListener('click', function () { selectTab(tab.getAttribute('data-filter')); });
+  });
+  window.addEventListener('hashchange', function () { selectTab(location.hash.slice(1)); });
+  if (location.hash.length > 1) {
+    filter = location.hash.slice(1);
+    Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (t) {
+      t.classList.toggle('is-active', t.getAttribute('data-filter') === filter);
+    });
+    if (!document.querySelector('.tab.is-active')) filter = 'pending';
+  }
+
+  document.getElementById('refresh').addEventListener('click', load);
+  document.getElementById('logout').addEventListener('click', forgetKey);
+  document.getElementById('export-csv').addEventListener('click', function () {
+    say('Building CSV...');
+    api('/api/submissions?format=csv').then(function (r) { return r.blob(); }).then(function (blob) {
+      var url = URL.createObjectURL(blob);
+      var a = el('a', { href: url, download: 'friendslop-submissions.csv' });
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      say('');
+    }).catch(function () { say('CSV export failed.'); });
+  });
+
+  keyForm.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    key = keyInput.value.trim();
+    if (!key) return;
+    keyStatus.textContent = 'Checking...';
+    load().then(function () {
+      if (!queue.hidden) {
+        keyStatus.textContent = '';
+        try { localStorage.setItem(KEY_STORAGE, key); } catch (e) { /* fine */ }
+      }
+    });
+  });
+
+  // Remembered key from last time
+  try { key = localStorage.getItem(KEY_STORAGE) || ''; } catch (e) { key = ''; }
+  if (key) load();
+})();

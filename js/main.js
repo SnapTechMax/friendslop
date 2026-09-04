@@ -26,9 +26,53 @@
 
   // Live "games submitted" count from /api/stats. Falls back to whatever is in the HTML.
   var games = document.getElementById('stat-games');
+  var live = document.getElementById('stat-live');
   if (games && window.fetch) {
     fetch('/api/stats').then(function (r) { return r.json(); }).then(function (d) {
       if (d && typeof d.submissions === 'number') games.textContent = String(d.submissions);
+      if (live && d && typeof d.approved === 'number') live.textContent = String(d.approved);
+    }).catch(function () {});
+  }
+
+  // Approved games replace the placeholder cards. Built with DOM APIs because
+  // titles and blurbs are user input.
+  var grid = document.getElementById('games');
+  if (grid && window.fetch) {
+    var el = function (tag, attrs, children) {
+      var node = document.createElement(tag);
+      if (attrs) Object.keys(attrs).forEach(function (k) {
+        if (k === 'class') node.className = attrs[k];
+        else if (k === 'text') node.textContent = attrs[k];
+        else node.setAttribute(k, attrs[k]);
+      });
+      (children || []).forEach(function (c) { if (c) node.appendChild(c); });
+      return node;
+    };
+    var stripes = ['cover-a', 'cover-b', 'cover-c'];
+    var gameCard = function (g, i) {
+      var cover = g.hasCover
+        ? el('div', { class: 'cover cover-img' }, [el('img', { src: '/api/cover?id=' + encodeURIComponent(g.id), alt: '', loading: 'lazy' })])
+        : el('div', { class: 'cover ' + stripes[i % 3] }, [el('span', { text: 'NO COVER' })]);
+      var players = g.players ? (g.players.min === g.players.max ? g.players.min + ' players' : g.players.min + '\u2013' + g.players.max + ' players') : '';
+      var who = g.onBehalf && g.credit ? g.credit : g.devName;
+      return el('article', { class: 'game card' }, [
+        cover,
+        el('h4', { text: g.title }),
+        el('div', { class: 'meta', text: players + ' \u00b7 by ' + who }),
+        el('p', { class: 'blurb', text: g.blurb }),
+        el('div', { class: 'tags' }, (g.tags || []).map(function (t) { return el('span', { text: t }); })),
+        el('a', { class: 'cta cta-small', href: g.url, target: '_blank', rel: 'noopener noreferrer', text: 'Get it' })
+      ]);
+    };
+    fetch('/api/games').then(function (r) { return r.json(); }).then(function (d) {
+      var list = (d && d.games) || [];
+      if (!list.length) return;
+      var title = document.getElementById('games-title');
+      var lede = document.getElementById('games-lede');
+      if (title) title.textContent = 'Front page slop';
+      if (lede) lede.textContent = 'Real games by real small teams. Newest first. Voting is coming; for now, go play them.';
+      grid.textContent = '';
+      list.forEach(function (g, i) { grid.appendChild(gameCard(g, i)); });
     }).catch(function () {});
   }
 
