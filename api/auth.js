@@ -193,10 +193,10 @@ async function changePassword(request, body) {
 
 async function usernameAvailable(request, url) {
   const u = String(url.searchParams.get('u') || '').trim();
-  const problem = usernameProblem(u);
-  if (problem) return json({ available: false, message: problem });
   const auth = await getUser(request);
   if (auth && auth.user.username && auth.user.username.toLowerCase() === u.toLowerCase()) return json({ available: true, message: "That's you." });
+  const problem = usernameProblem(u);
+  if (problem) return json({ available: false, message: problem });
   const taken = await usernameTaken(u);
   return json({ available: !taken, message: taken ? 'Taken.' : 'Free.' });
 }
@@ -205,12 +205,13 @@ async function setUsername(request, body) {
   const auth = await getUser(request);
   if (!auth) return json({ ok: false, message: 'Log in first.' }, 401);
   const username = String(body.username || '').trim();
-  const problem = usernameProblem(username);
-  if (problem) return json({ ok: false, message: problem, errors: { username: problem } }, 400);
-  if (!(await underLimit('rename', auth.user.id, 5, 24 * 3600))) return json({ ok: false, message: 'Five renames a day is plenty.' }, 429);
-
   const user = auth.user;
   const old = user.username || '';
+  if (username === old) return json({ ok: true, user: publicUser(user), message: 'Already yours.' });
+  const problem = usernameProblem(username);
+  if (problem) return json({ ok: false, message: problem, errors: { username: problem } }, 400);
+  if (!(await underLimit('rename', user.id, 5, 24 * 3600))) return json({ ok: false, message: 'Five renames a day is plenty.' }, 429);
+
   if (old.toLowerCase() !== username.toLowerCase()) {
     if (!(await claimUsername(username, user.id))) return json({ ok: false, message: 'That username is taken.', errors: { username: 'Taken. Try another.' } }, 409);
     if (old) await releaseUsername(old);
