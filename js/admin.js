@@ -184,23 +184,41 @@
 
   var WHEN = { now: 'right now', tonight: 'tonight', tomorrow: 'tomorrow', weekend: 'this weekend', whenever: 'whenever' };
 
+  function clearReports(id) {
+    say('Clearing reports...');
+    api('/api/report?id=' + encodeURIComponent(id), { method: 'DELETE' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.ok) { say(d.message || 'That did not work.'); return; }
+        crews = crews.map(function (c) { return c.id === id ? Object.assign({}, c, { reports: 0, hidden: false, reportReasons: [] }) : c; });
+        say('Cleared ' + d.cleared + ' report' + (d.cleared === 1 ? '' : 's') + '. It is back on the board.');
+        render();
+      })
+      .catch(function () { say('That did not work.'); });
+  }
+
   function crewCard(c) {
     var contact = c.contactType === 'link'
       ? el('a', { href: c.contact, target: '_blank', rel: 'noopener noreferrer', text: c.contact })
       : el('code', { text: c.contact });
-    return el('article', { class: 'card review crew' + (c.open ? '' : ' review-rejected') }, [
+    return el('article', { class: 'card review crew' + (c.open ? '' : ' review-rejected') + (c.hidden ? ' review-hidden' : '') }, [
       el('div', { class: 'review-head' }, [
         el('span', { class: 'pill ' + (c.open ? 'pill-approved' : 'pill-rejected'), text: c.open ? 'open' : 'expired' }),
         el('span', { class: 'pill pill-when', text: WHEN[c.when] || c.when }),
         el('span', { class: 'pill pill-votes', text: (c.in || 0) + '/' + c.need + ' in' }),
+        c.reports ? el('span', { class: 'pill pill-report', text: '\u2691 ' + c.reports + (c.hidden ? ' · hidden' : '') }) : null,
         el('span', { class: 'when', text: 'posted ' + ago(c.createdAt) })
       ]),
       el('h3', null, [c.gameUrl ? el('a', { href: c.gameUrl, target: '_blank', rel: 'noopener noreferrer', text: c.gameTitle }) : el('span', { text: c.gameTitle })]),
       el('div', { class: 'meta', text: 'have ' + c.have + ' · need ' + c.need + ' · ' + c.platform + (c.region ? ' · ' + c.region : '') + (c.whenNote ? ' · ' + c.whenNote : '') }),
       c.note ? el('p', { class: 'blurb', text: c.note }) : null,
       el('div', { class: 'meta meta-contact' }, [c.contactType + ': ', contact, ' · id ', el('code', { text: c.id })]),
+      c.reportReasons && c.reportReasons.length ? el('ul', { class: 'report-list' }, c.reportReasons.map(function (r) {
+        return el('li', { text: r.reason + (r.note ? ': ' + r.note : '') + ' (' + ago(r.at) + ')' });
+      })) : null,
       el('div', { class: 'review-actions' }, [
-        el('button', { type: 'button', class: 'cta cta-small cta-danger', text: 'Delete', onclick: function () { removeCrew(c.id, c.gameTitle); } })
+        el('button', { type: 'button', class: 'cta cta-small cta-danger', text: 'Delete', onclick: function () { removeCrew(c.id, c.gameTitle); } }),
+        c.reports ? el('button', { type: 'button', class: 'cta cta-small', text: 'Clear reports', onclick: function () { clearReports(c.id); } }) : null
       ])
     ]);
   }

@@ -16,8 +16,10 @@
   // Calls this browser posted (id -> delete token) and calls it said "I'm in" to.
   var mine = {};
   var ins = {};
+  var reported = {};
   try { mine = JSON.parse(localStorage.getItem('fs_crews') || '{}') || {}; } catch (e) { mine = {}; }
   try { ins = JSON.parse(localStorage.getItem('fs_crewin') || '{}') || {}; } catch (e) { ins = {}; }
+  try { reported = JSON.parse(localStorage.getItem('fs_reports') || '{}') || {}; } catch (e) { reported = {}; }
   function save(key, obj) { try { localStorage.setItem(key, JSON.stringify(obj)); } catch (e) { /* fine */ } }
 
   function el(tag, attrs, children) {
@@ -83,6 +85,45 @@
     return btn;
   }
 
+  var REASONS = [
+    ['spam', 'Spam or an ad'],
+    ['scam', 'Scam or phishing link'],
+    ['harassment', 'Harassment or slurs'],
+    ['wrong', 'Not a real crew call'],
+    ['other', 'Something else']
+  ];
+
+  function reportControl(c, cardEl) {
+    if (reported[c.id]) return el('span', { class: 'reported', text: 'reported' });
+    var open = false;
+    var btn = el('button', { type: 'button', class: 'report-btn', text: 'report' });
+    var select = el('select', { class: 'report-reason' }, REASONS.map(function (r) { return el('option', { value: r[0], text: r[1] }); }));
+    var note = el('input', { type: 'text', class: 'report-note', maxlength: '200', placeholder: 'Anything else? (optional)' });
+    var send = el('button', { type: 'button', class: 'cta cta-small cta-danger', text: 'Send report' });
+    var cancel = el('button', { type: 'button', class: 'copy', text: 'cancel' });
+    var status = el('span', { class: 'when' });
+    var panel = el('div', { class: 'report-form', hidden: '' }, [select, note, send, cancel, status]);
+    var wrap = el('div', { class: 'report-wrap' }, [btn, panel]);
+
+    btn.addEventListener('click', function () { open = !open; panel.hidden = !open; if (open) select.focus(); });
+    cancel.addEventListener('click', function () { open = false; panel.hidden = true; });
+    send.addEventListener('click', function () {
+      send.disabled = true;
+      status.textContent = 'Sending...';
+      fetch('/api/report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: c.id, reason: select.value, note: note.value.trim() }) })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (!d || !d.ok) { status.textContent = (d && d.message) || 'That did not work.'; send.disabled = false; return; }
+          reported[c.id] = true; save('fs_reports', reported);
+          wrap.textContent = '';
+          wrap.appendChild(el('span', { class: 'reported', text: d.hidden ? 'reported, now hidden' : 'reported, thanks' }));
+          if (d.hidden && cardEl) cardEl.classList.add('crew-full');
+        })
+        .catch(function () { status.textContent = 'That did not work.'; send.disabled = false; });
+    });
+    return wrap;
+  }
+
   function card(c) {
     var spots = c.need + (c.need === 1 ? ' spot' : ' spots');
     var when = WHEN[c.when] || c.when;
@@ -99,7 +140,7 @@
       actions.push(el('button', { type: 'button', class: 'cta cta-small cta-danger', text: 'Delete my call', onclick: function () { remove(c.id); } }));
     }
 
-    return el('article', { class: 'card crew' + (full ? ' crew-full' : '') }, [
+    var article = el('article', { class: 'card crew' + (full ? ' crew-full' : '') }, [
       el('div', { class: 'crew-head' }, [
         el('span', { class: 'pill pill-when', text: when }),
         full ? el('span', { class: 'pill pill-full', text: 'probably full' }) : null,
@@ -111,6 +152,8 @@
       el('div', { class: 'crew-contact' }, [contactNode(c)]),
       el('div', { class: 'review-actions' }, actions)
     ]);
+    if (!mine[c.id]) article.appendChild(reportControl(c, article));
+    return article;
   }
 
   var crews = [];

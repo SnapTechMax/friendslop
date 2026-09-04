@@ -54,7 +54,7 @@ Then visit http://localhost:4173.
 - `api/vote.js` — toggles an upvote on an approved game
 - `lib/votes.js` — one-per-person toggle storage, used by votes and crew "I'm in"
 - `crews.html` / `js/crews.js` — the crew board at `/crews`
-- `api/crews.js` — lists crew calls; `api/crew.js` — post and delete; `api/crew-in.js` — "I'm in"
+- `api/crews.js` — lists crew calls; `api/crew.js` — post and delete; `api/crew-in.js` — "I'm in"; `api/report.js` — report a call, admin clears reports
 - `lib/crews.js` — crew storage, expiry, and the sweep
 - `vercel.json` — `cleanUrls` so `/submit.html` is reachable as `/submit`
 
@@ -148,6 +148,8 @@ Endpoints:
 - `POST /api/crew` posts a call and returns a one-time `token`. The browser keeps it in localStorage so the poster gets a "Delete my call" button. Three open calls per poster (salted IP hash), then a 429.
 - `DELETE /api/crew?id=<id>&token=<token>` lets the poster remove it; the admin key works without a token.
 - `POST /api/crew-in` with `{ "id" }` toggles "I'm in", one per person per call, same mechanism as votes. Cards show `in/need` and flip to "probably full" when it's reached. It's a signal, not a reservation; the contact method is where the crew actually forms.
+
+Every card that isn't yours has a small "report" link with a reason picker (spam, scam, harassment, not a real call, other) and an optional note. `POST /api/report` stores one report per person per call, same salted-IP mechanism as votes. At three reports the call disappears from the public board on its own. The admin Crews tab shows the count and the reasons, with "Clear reports" (`DELETE /api/report?id=` with the admin key) to put it back, or Delete to remove it.
 
 Contact details are public by design, that's the whole point of the board. Invite links must be full http(s) URLs and open in a new tab; usernames are shown as text with a copy button. The Crews tab on `/admin` lists every call, open or expired, with a delete button.
 

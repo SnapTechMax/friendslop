@@ -1,7 +1,7 @@
 // POST /api/crew-in { id } -> { ok, in, count }
 // Toggles "I'm in" on an open crew call. One per person (salted IP hash), like votes.
 
-import { CREW_ID_RE, IN_PREFIX, isOpen } from '../lib/crews.js';
+import { CREW_ID_RE, IN_PREFIX, REPORT_PREFIX, REPORT_THRESHOLD, isOpen } from '../lib/crews.js';
 import { readJson } from '../lib/submissions.js';
 import { addVote, countVotesFor, hasVoted, removeVote, voterHash } from '../lib/votes.js';
 
@@ -17,6 +17,7 @@ export async function POST(request) {
   try {
     const crew = await readJson('crews/' + id + '.json');
     if (!crew || !isOpen(crew)) return json({ ok: false, message: 'That crew call is gone.' }, 404);
+    if ((await countVotesFor(id, REPORT_PREFIX)) >= REPORT_THRESHOLD) return json({ ok: false, message: 'That crew call is gone.' }, 404);
 
     const voter = voterHash(request);
     let on;

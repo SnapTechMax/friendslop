@@ -676,6 +676,28 @@ p, li { max-width: 80ch; }
 .crew-form .field input + .hint { margin-top: 4px; }
 .crew-form .field select + input { margin-top: 6px; }
 
+.report-wrap { margin-top: 10px; }
+.report-btn, .reported {
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 700;
+  color: #3a2a4a;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline dotted;
+}
+.report-btn:hover { color: #c4003f; }
+.reported { cursor: default; text-decoration: none; }
+.report-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; padding: 8px; border: 3px dashed var(--line); background: var(--pink-soft); }
+.report-form .cta { margin-top: 0; }
+.report-reason, .report-note { font-family: var(--font); font-size: 14px; padding: 4px 6px; border: 3px inset var(--line); background: #fff; }
+.report-note { flex: 1; min-width: 160px; }
+.pill-report { background: #ff3b3b; color: #fff; }
+.review-hidden { box-shadow: 0 0 0 6px #ff3b3b, 0 0 0 12px var(--pink), 0 0 22px rgba(27, 6, 48, 0.55) inset; }
+.report-list { margin: 6px 0 0; padding-left: 18px; font-size: 14px; color: #c4003f; }
+
 /* The back room */
 .key-card { max-width: 520px; margin: 26px auto 0; }
 
