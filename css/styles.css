@@ -96,6 +96,45 @@ p, li { max-width: 80ch; }
   background: linear-gradient(90deg, var(--lime), var(--tang));
 }
 
+/* Tab strip: folder tabs, one lit */
+.site-nav {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px 8px 0;
+  border-bottom: 6px solid var(--line);
+  background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.35));
+}
+
+.site-nav a {
+  display: inline-block;
+  font-weight: 900;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--ink);
+  text-decoration: none;
+  background: var(--panel-strong);
+  border: 6px ridge var(--line);
+  border-bottom: none;
+  padding: 8px 16px 10px;
+  margin-bottom: -6px;
+  transform: rotate(-1deg);
+  box-shadow: 4px 0 0 var(--line);
+}
+
+.site-nav a:nth-child(even) { transform: rotate(1deg); }
+.site-nav a:hover { background: var(--lime-soft); }
+.site-nav a.is-active {
+  background: var(--lime);
+  border-style: solid;
+  padding-bottom: 16px;
+  transform: none;
+  position: relative;
+  z-index: 1;
+}
+
 /* Title */
 .wordart {
   font-size: clamp(32px, 9.4vw, 104px);
@@ -700,6 +739,65 @@ p, li { max-width: 80ch; }
 .review-hidden { box-shadow: 0 0 0 6px #ff3b3b, 0 0 0 12px var(--pink), 0 0 22px rgba(27, 6, 48, 0.55) inset; }
 .report-list { margin: 6px 0 0; padding-left: 18px; font-size: 14px; color: #c4003f; }
 
+.see-all { text-align: center; margin: 4px 0 0; }
+
+/* Leaderboard */
+.podium {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 26px;
+  margin: 26px 4px 8px;
+  align-items: start;
+}
+
+.podium-card { padding: 12px; position: relative; }
+.podium-1 { transform: rotate(-0.8deg) translateY(-10px); box-shadow: 0 0 0 6px var(--amber), 0 0 0 12px var(--grape), 0 0 22px rgba(27, 6, 48, 0.55) inset; }
+.podium-2 { transform: rotate(0.5deg); }
+.podium-3 { transform: rotate(-0.3deg) translateY(10px); }
+.podium-card h3 { margin: 10px 0 2px; font-size: 21px; line-height: 1.15; }
+.podium-card .meta { font-size: 13px; color: #3a2a4a; }
+
+.rank-badge {
+  position: absolute;
+  top: -18px;
+  left: -14px;
+  z-index: 2;
+  background: var(--amber);
+  border: 5px solid var(--line);
+  padding: 4px 10px;
+  font-weight: 900;
+  font-size: 18px;
+  transform: rotate(-6deg);
+  box-shadow: 4px 4px 0 var(--line);
+}
+
+.podium-2 .rank-badge { background: #e6e6f0; }
+.podium-3 .rank-badge { background: #f3b27a; }
+
+.leaderboard { list-style: none; margin: 10px 4px 0; padding: 0; display: grid; gap: 14px; }
+
+.lb-row {
+  display: grid;
+  grid-template-columns: 84px 150px 1fr auto;
+  gap: 14px;
+  align-items: center;
+  background: var(--panel-strong);
+  border: 6px double var(--line);
+  padding: 10px 14px;
+  box-shadow: 5px 5px 0 var(--line);
+}
+
+.lb-top { background: linear-gradient(90deg, var(--lime-soft), var(--panel-strong) 40%); }
+.lb-rank { font-family: var(--mono); font-weight: 900; font-size: 20px; }
+.lb-cover .cover { aspect-ratio: 16 / 10; border-width: 4px; }
+.lb-cover .cover span { font-size: 11px; padding: 2px 6px; }
+.lb-body h3 { margin: 0 0 2px; font-size: 20px; line-height: 1.15; }
+.lb-body h3 a { color: var(--ink); }
+.lb-body .meta { font-size: 13px; color: #3a2a4a; }
+.lb-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.lb-actions .vote { margin-top: 0; }
+.lb-actions .crew-link { margin-top: 0; }
+
 /* The back room */
 .key-card { max-width: 520px; margin: 26px auto 0; }
 
@@ -823,6 +921,12 @@ p, li { max-width: 80ch; }
   .field-row { grid-template-columns: 1fr; gap: 0; }
   .review-grid { grid-template-columns: 1fr; }
   .crews-layout { grid-template-columns: 1fr; }
+  .podium { grid-template-columns: 1fr; }
+  .podium-1, .podium-3 { transform: none; }
+  .lb-row { grid-template-columns: 60px 1fr; }
+  .lb-cover { display: none; }
+  .lb-actions { grid-column: 1 / -1; flex-direction: row; justify-content: flex-start; }
+  .site-nav a { font-size: 14px; padding: 6px 10px 8px; }
   .games { grid-template-columns: 1fr; }
   .sticker { display: none; }
   .loud-table { border-spacing: 4px; }

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Top Slop Leaderboard — friendslop.wtf</title>
+  <meta name="description" content="Every friendslop game on the site, ranked by upvotes. Play them, then vote.">
+  <meta property="og:title" content="Top Slop Leaderboard — friendslop.wtf">
+  <meta property="og:description" content="Every friendslop game on the site, ranked by upvotes.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://friendslop.wtf/top">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="site-bg" aria-hidden="true"></div>
+
+  <marquee class="ticker" scrollamount="10">🏆 TOP SLOP LEADERBOARD 🏆 &nbsp;&nbsp;|&nbsp;&nbsp; RANKED BY PEOPLE WHO ACTUALLY PLAYED THEM &nbsp;&nbsp;|&nbsp;&nbsp; ONE VOTE EACH. NO, YOUR ALT DOES NOT COUNT. &nbsp;&nbsp;|&nbsp;&nbsp; 🚧 SCORES UPDATE EVERY 30 SECONDS OR SO 🚧</marquee>
+
+  <nav class="site-nav" aria-label="Site">
+    <a href="/">Front page</a>
+    <a href="/top" class="is-active" aria-current="page">Top Slop</a>
+    <a href="/submit">Post a Game</a>
+    <a href="/crews">Find a Crew</a>
+  </nav>
+
+  <div class="container">
+    <h1 class="wordart wordart-small">top <span>slop</span></h1>
+
+    <p class="subhead">
+      Every game that made it past the queue, ranked by upvotes. One vote per person per game, no account. Play something, then hit the arrow if it deserves it.
+    </p>
+
+    <section id="podium" class="podium" hidden></section>
+
+    <div class="board-head">
+      <h2 class="col-title">The whole board <span class="count" id="top-count">0</span></h2>
+      <a class="cta cta-small cta-alt" href="/submit">Get on it</a>
+    </div>
+    <div id="top-status" class="signup-status" role="status" aria-live="polite"></div>
+    <ol id="top-list" class="leaderboard"></ol>
+    <p id="top-empty" class="section-lede" hidden>Nothing's ranked yet. Somebody has to be first. <a href="/submit">Post a game</a> and go tell people.</p>
+
+    <p class="fineprint">© 2026 friendslop.wtf — Made with friends. Be decent in lobbies.</p>
+  </div>
+
+  <script src="js/vote.js"></script>
+  <script src="js/top.js"></script>
+</body>
+</html>

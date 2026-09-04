@@ -35,7 +35,9 @@ Then visit http://localhost:4173.
 
 - `index.html` — the landing page
 - `css/styles.css` — all styling. Loud on purpose, readable on purpose.
-- `js/main.js` — visitor counter, the ticking "bugs shipped as features" stat, and the signup form handler
+- `js/main.js` — visitor counter, the ticking "bugs shipped as features" stat, the signup form handler, and the front-page game cards
+- `js/vote.js` — the shared upvote button
+- `top.html` / `js/top.js` — the Top Slop leaderboard at `/top`
 - `submit.html` — the game submission page, served at `/submit`
 - `js/submit.js` — client-side validation and the multipart post for submissions
 - `api/signup.js` — POST saves a signup to Vercel Blob; GET exports them, admin key required
@@ -128,6 +130,12 @@ Without the variables, approving still works. The admin card shows "not emailed"
 curl -X POST https://friendslop.wtf/api/review -H "Authorization: Bearer $SIGNUP_ADMIN_KEY" \
   -H "Content-Type: application/json" -d '{"id":"<id>","status":"approved"}'
 ```
+
+## Navigation and the leaderboard
+
+Every public page has a tab strip under the ticker: Front page (`/`), Top Slop (`/top`), Post a Game (`/submit`), Find a Crew (`/crews`). The active tab is lit. `/admin` is deliberately not in it.
+
+`/top` is the leaderboard: every approved game ranked by votes, from the same `/api/games` call the front page uses. The top three get podium cards with medals, then the full numbered list. Votes work from there too. The front page shows the first six and links to the full board.
 
 ## Voting
 
