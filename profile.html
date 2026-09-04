@@ -32,7 +32,76 @@
       <div class="card card-tilt-r">
         <span class="badge" id="role-badge">Member™</span>
         <h2 id="p-username">you</h2>
+        <p class="meta"><a id="p-public-link" href="/profile">See your public profile</a> · that's what everyone else sees.</p>
         <div id="auth-notice" class="signup-status" role="status" aria-live="polite"></div>
+
+        <h3 class="pc-label">Look</h3>
+        <div class="look-row">
+          <div id="look-avatar" class="look-avatar"></div>
+          <div class="look-controls">
+            <label class="field">
+              Profile picture <span class="optional">(PNG, JPG, GIF, or WebP under 1MB)</span>
+              <input type="file" id="avatar-input" accept="image/png,image/jpeg,image/gif,image/webp">
+            </label>
+            <div class="review-actions">
+              <button type="button" class="cta cta-small" id="avatar-upload">Upload</button>
+              <button type="button" class="cta cta-small cta-alt" id="avatar-remove">Remove</button>
+              <span id="avatar-status" class="signup-status inline-status"></span>
+            </div>
+          </div>
+        </div>
+
+        <form id="look-form" novalidate>
+          <div class="field">
+            Accent colour
+            <div class="swatches" id="swatches">
+              <label class="swatch accent-lime"><input type="radio" name="accent" value="lime"><span>lime</span></label>
+              <label class="swatch accent-grape"><input type="radio" name="accent" value="grape"><span>grape</span></label>
+              <label class="swatch accent-tang"><input type="radio" name="accent" value="tang"><span>tangerine</span></label>
+              <label class="swatch accent-pink"><input type="radio" name="accent" value="pink"><span>pink</span></label>
+              <label class="swatch accent-amber"><input type="radio" name="accent" value="amber"><span>amber</span></label>
+              <label class="swatch accent-ink"><input type="radio" name="accent" value="ink"><span>ink</span></label>
+            </div>
+          </div>
+          <label class="field">
+            Pronouns <span class="optional">(optional)</span>
+            <input name="pronouns" type="text" maxlength="24" placeholder="they/them">
+            <span class="field-error" data-for="pronouns"></span>
+          </label>
+          <label class="field">
+            About me
+            <textarea name="bio" rows="4" maxlength="300" placeholder="What you play, what you make, how loud you are on comms."></textarea>
+            <span class="hint"><span id="bio-count">0</span>/300</span>
+            <span class="field-error" data-for="bio"></span>
+          </label>
+          <label class="field">
+            Favorite games
+            <input name="favorites" type="text" maxlength="220" placeholder="Lethal Company, Peak, that thing dave made">
+            <span class="hint">Comma separated, up to five.</span>
+            <span class="field-error" data-for="favorites"></span>
+          </label>
+          <div class="field-row">
+            <label class="field">
+              Discord username <span class="optional">(optional)</span>
+              <input name="discord" type="text" maxlength="40" placeholder="your.discord.name">
+              <span class="field-error" data-for="discord"></span>
+            </label>
+            <label class="field">
+              itch.io page <span class="optional">(optional)</span>
+              <input name="itch" type="url" maxlength="200" placeholder="https://you.itch.io">
+              <span class="field-error" data-for="itch"></span>
+            </label>
+          </div>
+          <label class="field">
+            Steam profile <span class="optional">(optional)</span>
+            <input name="steam" type="url" maxlength="200" placeholder="https://steamcommunity.com/id/you">
+            <span class="field-error" data-for="steam"></span>
+          </label>
+          <button type="submit" class="cta cta-small">Save look</button>
+          <span id="look-status" class="signup-status inline-status"></span>
+        </form>
+
+        <h3 class="pc-label">Account</h3>
 
         <form id="username-form" novalidate>
           <label class="field">

@@ -56,7 +56,7 @@ Then visit http://localhost:4173.
 - `api/auth.js` — register, login, logout, verify, reset, change password, OAuth start and callback
 - `lib/auth.js` — password hashing, sessions, cookies, one-time tokens, rate limits
 - `lib/oauth.js` — Discord and Google provider config and token exchange
-- `login.html` / `js/login.js`, `profile.html` / `js/profile.js`, `reset.html`, `verify.html` — the account pages
+- `login.html` / `js/login.js`, `profile.html` / `js/profile.js`, `u.html` / `js/u.js`, `reset.html`, `verify.html` — the account pages
 - `js/auth.js` — shared: who am I, the nav slot, and the "log in first" gate
 - `api/vote.js` — toggles an upvote on an approved game
 - `lib/votes.js` — one-per-person toggle storage, used by votes and crew "I'm in"
@@ -100,7 +100,9 @@ Create the app in the provider's developer console (Discord Developer Portal, Go
 
 `SITE_URL` (default `https://friendslop.wtf`) is the base for email links and OAuth redirect URIs.
 
-**Pages:** `/login` (log in, sign up, forgot password), `/profile` (username, email status and resend, change password, log out, log out everywhere, and a link to the back room for staff), `/verify?token=`, `/reset?token=`. The tab strip shows "Log in" or your username linking to the profile, plus a role badge for staff.
+**Profiles.** Every account has a public page at `/u/<username>` (rewritten to `u.html`): a striped banner in the account's accent colour, an avatar or initials, username, pronouns, role badge, about me (300 characters), up to five favorite games, links to Discord, itch.io, and Steam, a player card with counts, and the approved games they posted. `GET /api/auth?action=profile&u=<username>` serves it, cached 30 seconds. The owner edits all of it on `/profile`: `POST /api/auth?action=update-profile` for the text fields, `?action=avatar` (multipart, PNG/JPG/GIF/WebP under 1MB, stored at `avatars/<user id>.<ext>`) and `?action=remove-avatar` for the picture. Avatars are served by `/api/cover?avatar=<username>`. Usernames in the tab strip and on crew cards link to the profile.
+
+**Pages:** `/login` (log in, sign up, forgot password), `/profile` (look, username, email status and resend, change password, log out, log out everywhere, delete account, and a link to the back room for staff), `/u/<username>` (public profile), `/verify?token=`, `/reset?token=`. The tab strip shows "Log in" or your username linking to the profile, plus a role badge for staff.
 
 **What it changes elsewhere.** Submissions take the contact email from the account and record who posted. Crew calls belong to the account (no more delete tokens), the three-open-calls limit and the first-post hold are per account, and "by name" shows on the card. Votes, "I'm in", and reports are one per account instead of one per IP, so shared networks no longer collide. `VOTE_SALT` is no longer used.
 

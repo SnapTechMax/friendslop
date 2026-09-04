@@ -4,6 +4,10 @@
 // GET  ?action=providers               -> { providers: [...], mailEnabled }
 // POST ?action=register                { email, password, username }
 // GET  ?action=username-available&u=   -> { available }
+// GET  ?action=profile&u=<username>    -> public profile with the games they posted
+// POST ?action=update-profile          { bio, pronouns, accent, favorites, discord, itch, steam }   (logged in)
+// POST ?action=avatar                  multipart with "avatar" image, 1MB max   (logged in)
+// POST ?action=remove-avatar           (logged in)
 // POST ?action=set-username            { username }   (logged in)
 // POST ?action=login                   { email, password }
 // POST ?action=logout                  ends this session
@@ -18,17 +22,18 @@
 // GET  ?action=callback&provider=x     302 back to the site  (rewritten from /auth/callback/:provider)
 
 import { createHash, randomBytes } from 'node:crypto';
-import { del, list } from '@vercel/blob';
+import { del, list, put } from '@vercel/blob';
 import {
   EMAIL_RE, claimEmail, claimUsername, clearSessionCookie, clientIp, consumeToken, cookieHeader, createSession,
   destroyAllSessions, destroySession, findUserByEmail, getUser, hashPassword, hasFetchHeader, issueToken,
   newId, normEmail, oauthPath, parseCookies, passwordProblem, pickUsername, publicUser, releaseUsername, safeNext,
-  saveUser, sessionCookie, siteUrl, underLimit, usernameProblem, usernameTaken, userPath, verifyPassword, emailPath, usernamePath
+  saveUser, sessionCookie, siteUrl, underLimit, usernameProblem, usernameTaken, userPath, verifyPassword, emailPath, usernamePath,
+  profileProblems, publicProfile
 } from '../lib/auth.js';
-import { deleteCrew, posterPath, readAllCrews } from '../lib/crews.js';
+import { deleteCrew, isHeld, isOpen, posterPath, readAllCrews } from '../lib/crews.js';
 import { mailEnabled, resetEmail, sendMail, verificationEmail } from '../lib/mail.js';
 import { PROVIDERS, enabledProviders, exchangeCode, providerCreds, redirectUri } from '../lib/oauth.js';
-import { readAllSubmissions, readJson, rebuildApprovedIndex, writeJson } from '../lib/submissions.js';
+import { publicGame, readAllSubmissions, readJson, rebuildApprovedIndex, writeJson } from '../lib/submissions.js';
 
 const OAUTH_COOKIE = 'fs_oauth';
 
@@ -240,6 +245,7 @@ async function deleteAccount(request, body) {
   // Identity: provider links, username and email claims, first-post marker, sessions, the record itself.
   for (const [provider, link] of Object.entries(user.providers || {})) if (link && link.id) doomed.push(oauthPath(provider, link.id));
   if (user.username) doomed.push(usernamePath(user.username));
+  if (user.avatar) doomed.push(user.avatar);
   doomed.push(emailPath(user.email), posterPath(id), userPath(id));
   doomed.push(...(await listAll('sessions/' + id + '/')));
 
@@ -249,6 +255,73 @@ async function deleteAccount(request, body) {
   if (removed.submissionsUnlinked) await rebuildApprovedIndex();
 
   return json({ ok: true, removed }, 200, { 'Set-Cookie': clearSessionCookie(request) });
+}
+
+// ---- profiles ----
+
+const AVATAR_TYPES = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp' };
+const AVATAR_MAX = 1024 * 1024;
+
+async function profile(request, url) {
+  const u = String(url.searchParams.get('u') || '').trim();
+  if (!/^[A-Za-z0-9_.-]{1,32}$/.test(u)) return json({ ok: false, message: 'Bad username.' }, 400);
+  const ref = await readJson(usernamePath(u));
+  const user = ref && ref.userId ? await readJson(userPath(ref.userId)) : null;
+  if (!user || user.disabled) return json({ ok: false, message: 'No such slop enjoyer.' }, 404);
+
+  const games = (await readAllSubmissions()).filter((r) => r.userId === user.id && r.status === 'approved').map(publicGame)
+    .sort((a, b) => String(b.approvedAt).localeCompare(String(a.approvedAt)));
+  const now = Date.now();
+  const crewsOpen = (await readAllCrews()).filter((c) => c.userId === user.id && isOpen(c, now) && !isHeld(c, now)).length;
+  return json({ ok: true, profile: publicProfile(user), games, crewsOpen }, 200, { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120' });
+}
+
+async function updateProfile(request, body) {
+  const auth = await getUser(request);
+  if (!auth) return json({ ok: false, message: 'Log in first.' }, 401);
+  const { values, errors } = profileProblems(body);
+  if (Object.keys(errors).length) return json({ ok: false, message: 'Fix the marked fields.', errors }, 400);
+  const user = auth.user;
+  user.bio = values.bio;
+  user.pronouns = values.pronouns;
+  user.accent = values.accent;
+  user.favorites = values.favorites;
+  user.links = values.links;
+  user.profileUpdatedAt = new Date().toISOString();
+  await saveUser(user);
+  return json({ ok: true, user: publicUser(user) });
+}
+
+async function uploadAvatar(request) {
+  const auth = await getUser(request);
+  if (!auth) return json({ ok: false, message: 'Log in first.' }, 401);
+  let form;
+  try { form = await request.formData(); } catch { return json({ ok: false, message: 'Could not read the upload. Is it under 1MB?' }, 400); }
+  const file = form.get('avatar');
+  if (!file || typeof file !== 'object' || !file.size) return json({ ok: false, message: 'Pick an image first.' }, 400);
+  const ext = AVATAR_TYPES[file.type];
+  if (!ext) return json({ ok: false, message: 'PNG, JPG, GIF, or WebP only.' }, 400);
+  if (file.size > AVATAR_MAX) return json({ ok: false, message: 'Under 1MB, please.' }, 400);
+
+  const user = auth.user;
+  const path = 'avatars/' + user.id + '.' + ext;
+  if (user.avatar && user.avatar !== path) { try { await del(user.avatar); } catch (err) { /* fine */ } }
+  await put(path, await file.arrayBuffer(), { access: 'private', contentType: file.type, addRandomSuffix: false, allowOverwrite: true });
+  user.avatar = path;
+  user.avatarVersion = Date.now();
+  await saveUser(user);
+  return json({ ok: true, user: publicUser(user) });
+}
+
+async function removeAvatar(request) {
+  const auth = await getUser(request);
+  if (!auth) return json({ ok: false, message: 'Log in first.' }, 401);
+  const user = auth.user;
+  if (user.avatar) { try { await del(user.avatar); } catch (err) { /* fine */ } }
+  delete user.avatar;
+  user.avatarVersion = Date.now();
+  await saveUser(user);
+  return json({ ok: true, user: publicUser(user) });
 }
 
 // ---- usernames ----
@@ -397,6 +470,7 @@ export async function GET(request) {
       return json({ providers: enabledProviders().map((k) => ({ id: k, label: PROVIDERS[k].label })), mailEnabled: mailEnabled() }, 200, { 'Cache-Control': 'public, s-maxage=60' });
     }
     if (action === 'username-available') return usernameAvailable(request, url);
+    if (action === 'profile') return profile(request, url);
     if (action === 'oauth') return oauthStart(request, url);
     if (action === 'callback') return oauthCallback(request, url);
     return json({ ok: false, message: 'Unknown action.' }, 404);
@@ -410,6 +484,9 @@ export async function POST(request) {
   const url = new URL(request.url);
   const action = url.searchParams.get('action') || '';
   if (!hasFetchHeader(request)) return json({ ok: false, message: 'Request needs to come from the site.' }, 403);
+  if (action === 'avatar') {
+    try { return await uploadAvatar(request); } catch (err) { console.error('avatar failed', err); return json({ ok: false, message: 'Something broke on our end.' }, 500); }
+  }
   const body = await request.json().catch(() => ({}));
   try {
     switch (action) {
@@ -424,6 +501,8 @@ export async function POST(request) {
       case 'change-password': return await changePassword(request, body);
       case 'set-username': return await setUsername(request, body);
       case 'delete-account': return await deleteAccount(request, body);
+      case 'update-profile': return await updateProfile(request, body);
+      case 'remove-avatar': return await removeAvatar(request);
       default: return json({ ok: false, message: 'Unknown action.' }, 404);
     }
   } catch (err) {

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile — friendslop.wtf</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="site-bg" aria-hidden="true"></div>
+
+  <marquee class="ticker" scrollamount="10">A SLOP ENJOYER 🎮 &nbsp;&nbsp;|&nbsp;&nbsp; THIS IS SOMEBODY'S PROFILE &nbsp;&nbsp;|&nbsp;&nbsp; 🚧 BE NORMAL ABOUT IT 🚧</marquee>
+
+  <nav class="site-nav" aria-label="Site">
+    <a href="/">Front page</a>
+    <a href="/top">Top Slop</a>
+    <a href="/submit">Post a Game</a>
+    <a href="/crews">Find a Crew</a>
+    <span class="nav-user" id="nav-user"></span>
+  </nav>
+
+  <div class="container">
+    <div id="pc-status" class="signup-status" role="status" aria-live="polite">Loading...</div>
+
+    <section id="pc" class="pcard" hidden>
+      <div class="pc-banner" id="pc-banner"></div>
+      <div class="pc-head">
+        <div class="pc-avatar" id="pc-avatar"></div>
+        <div class="pc-title">
+          <h1 class="pc-name" id="pc-name"></h1>
+          <div class="pc-sub">
+            <span class="pc-pronouns" id="pc-pronouns" hidden></span>
+            <span class="pill" id="pc-role" hidden></span>
+            <span class="when" id="pc-since"></span>
+          </div>
+        </div>
+        <a class="cta cta-small pc-edit" id="pc-edit" href="/profile" hidden>Edit profile</a>
+      </div>
+
+      <div class="pc-body">
+        <div class="pc-main">
+          <section class="pc-section">
+            <h3 class="pc-label">About me</h3>
+            <p class="pc-bio" id="pc-bio"></p>
+          </section>
+          <section class="pc-section">
+            <h3 class="pc-label">Favorite games</h3>
+            <div class="tags pc-favs" id="pc-favs"></div>
+          </section>
+          <section class="pc-section" id="pc-links-section" hidden>
+            <h3 class="pc-label">Find me</h3>
+            <div class="pc-links" id="pc-links"></div>
+          </section>
+        </div>
+        <aside class="pc-side">
+          <div class="terminal">
+            <b>&gt;&gt; PLAYER CARD &lt;&lt;</b><br>
+            Games posted: <span id="pc-games-count">0</span><br>
+            Crew calls open: <span id="pc-crews">0</span><br>
+            Slop enjoyer since: <span id="pc-year">?</span>
+          </div>
+        </aside>
+      </div>
+
+      <section class="pc-section pc-games-section">
+        <h3 class="pc-label">Games posted</h3>
+        <div class="games" id="pc-games"></div>
+        <p class="meta" id="pc-no-games" hidden>Nothing on the front page yet.</p>
+      </section>
+    </section>
+
+    <section id="pc-missing" class="card gate-card" hidden>
+      <span class="badge">404™</span>
+      <h2>No such slop enjoyer</h2>
+      <p>Nobody has that username. They may have changed it, or deleted their account, or never existed, which is the spookiest option.</p>
+      <a class="cta" href="/">Back to the front page</a>
+    </section>
+
+    <p class="fineprint">© 2026 friendslop.wtf — Made with friends. Be decent in lobbies. · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script src="/js/vote.js"></script>
+  <script src="/js/u.js"></script>
+</body>
+</html>

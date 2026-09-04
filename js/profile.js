@@ -19,7 +19,32 @@
     });
   }
 
+  function initials(name) { return (name || '?').replace(/[^A-Za-z0-9]/g, '').slice(0, 2).toUpperCase() || '?'; }
+  function avatarBox(user) {
+    var p = user.profile || {};
+    var box = A.el('div', { class: 'avatar avatar-lg accent-' + (p.accent || 'grape') });
+    if (p.hasAvatar) box.appendChild(A.el('img', { src: '/api/cover?avatar=' + encodeURIComponent(user.username) + '&v=' + (p.avatarVersion || 0), alt: '' }));
+    else box.appendChild(A.el('span', { text: initials(user.username) }));
+    return box;
+  }
+
+  function fillLook(user) {
+    var p = user.profile || {};
+    var slot = document.getElementById('look-avatar'); slot.textContent = ''; slot.appendChild(avatarBox(user));
+    var lf = document.getElementById('look-form');
+    var radio = lf.querySelector('input[name=accent][value="' + (p.accent || 'grape') + '"]'); if (radio) radio.checked = true;
+    lf.elements.pronouns.value = p.pronouns || '';
+    lf.elements.bio.value = p.bio || '';
+    document.getElementById('bio-count').textContent = String((p.bio || '').length);
+    lf.elements.favorites.value = (p.favorites || []).join(', ');
+    lf.elements.discord.value = (p.links && p.links.discord) || '';
+    lf.elements.itch.value = (p.links && p.links.itch) || '';
+    lf.elements.steam.value = (p.links && p.links.steam) || '';
+    document.getElementById('p-public-link').setAttribute('href', '/u/' + encodeURIComponent(user.username));
+  }
+
   function fill(user) {
+    fillLook(user);
     document.getElementById('p-username').textContent = user.username;
     document.getElementById('role-badge').textContent = ROLE_LABEL[user.role] || 'Member™';
     document.getElementById('u-input').value = user.username;
@@ -69,6 +94,35 @@
       A.post('set-username', { username: input.value.trim() }).then(function (d) {
         if (d.ok) { us.textContent = 'Saved.'; notice.textContent = ''; fill(d.user); A.me(true).then(function () { location.reload(); }); return; }
         showErrors(uf, d.errors); us.textContent = d.message || 'That did not work.';
+      });
+    });
+
+    // Look: avatar upload and remove, accent, bio, favorites, links.
+    var avStatus = document.getElementById('avatar-status');
+    document.getElementById('avatar-upload').addEventListener('click', function () {
+      var file = document.getElementById('avatar-input').files[0];
+      if (!file) { avStatus.textContent = 'Pick an image first.'; return; }
+      if (file.size > 1024 * 1024) { avStatus.textContent = 'Under 1MB, please.'; return; }
+      var fd = new FormData(); fd.append('avatar', file);
+      avStatus.textContent = 'Uploading...';
+      fetch('/api/auth?action=avatar', { method: 'POST', headers: { 'X-Requested-With': 'fetch' }, body: fd })
+        .then(function (r) { return r.json(); })
+        .then(function (d) { if (d.ok) { avStatus.textContent = 'Looking good.'; fillLook(d.user); A.me(true); } else avStatus.textContent = d.message || 'That did not work.'; })
+        .catch(function () { avStatus.textContent = 'That did not work.'; });
+    });
+    document.getElementById('avatar-remove').addEventListener('click', function () {
+      avStatus.textContent = 'Removing...';
+      A.post('remove-avatar').then(function (d) { if (d.ok) { avStatus.textContent = 'Back to initials.'; fillLook(d.user); A.me(true); } else avStatus.textContent = d.message || 'That did not work.'; });
+    });
+    var lf = document.getElementById('look-form');
+    lf.elements.bio.addEventListener('input', function () { document.getElementById('bio-count').textContent = String(lf.elements.bio.value.length); });
+    lf.addEventListener('submit', function (ev) {
+      ev.preventDefault(); clearErrors(lf);
+      var ls = document.getElementById('look-status'); ls.textContent = 'Saving...';
+      var v = {}; Array.prototype.forEach.call(lf.elements, function (i) { if (i.name && (i.type !== 'radio' || i.checked)) v[i.name] = i.value; });
+      A.post('update-profile', v).then(function (d) {
+        if (d.ok) { ls.textContent = 'Saved.'; fillLook(d.user); A.me(true); return; }
+        showErrors(lf, d.errors); ls.textContent = d.message || 'That did not work.';
       });
     });
 

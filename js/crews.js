@@ -137,7 +137,6 @@
     var spots = c.need + (c.need === 1 ? ' spot' : ' spots');
     var when = WHEN[c.when] || c.when;
     var metaBits = [spots + ' · have ' + c.have, when + (c.whenNote ? ' (' + c.whenNote + ')' : ''), PLATFORM[c.platform] || c.platform];
-    if (c.by) metaBits.unshift('by ' + c.by);
     if (c.region) metaBits.push(c.region);
     var full = (c.in || 0) >= c.need;
 
@@ -158,7 +157,7 @@
         el('span', { class: 'when', text: 'posted ' + ago(c.createdAt) + ' · gone in ' + until(c.expiresAt) })
       ]),
       el('h3', null, [title]),
-      el('div', { class: 'meta', text: metaBits.join(' · ') }),
+      el('div', { class: 'meta' }, (c.by ? ['by ', el('a', { class: 'by-link', href: '/u/' + encodeURIComponent(c.by), text: c.by }), ' · '] : []).concat([metaBits.join(' · ')])),
       c.note ? el('p', { class: 'blurb', text: c.note }) : null,
       el('div', { class: 'crew-contact' }, [contactNode(c)]),
       el('div', { class: 'review-actions' }, actions)

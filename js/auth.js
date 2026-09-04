@@ -47,7 +47,7 @@
       slot.appendChild(el('a', { href: loginUrl(), class: 'nav-login', text: 'Log in' }));
       return;
     }
-    slot.appendChild(el('a', { class: 'nav-name', href: '/profile', title: 'Your profile', text: user.username }));
+    slot.appendChild(el('a', { class: 'nav-name', href: '/u/' + encodeURIComponent(user.username), title: 'Your profile', text: user.username }));
     if (user.role === 'owner' || user.role === 'admin') slot.appendChild(el('span', { class: 'nav-role', text: user.role }));
     if (!user.emailVerified) slot.appendChild(el('a', { href: '/profile?verify=1', class: 'nav-unverified', title: 'Email not verified yet', text: 'unverified' }));
     slot.appendChild(el('button', { type: 'button', class: 'nav-logout', text: 'Log out', onclick: function () {
