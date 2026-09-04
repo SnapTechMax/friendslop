@@ -38,8 +38,7 @@ Then visit http://localhost:4173.
 - `js/main.js` — visitor counter, the ticking "bugs shipped as features" stat, and the signup form handler
 - `submit.html` — the game submission page, served at `/submit`
 - `js/submit.js` — client-side validation and the multipart post for submissions
-- `api/signup.js` — saves a signup to Vercel Blob
-- `api/signups.js` — exports the signups, admin key required
+- `api/signup.js` — POST saves a signup to Vercel Blob; GET exports them, admin key required
 - `admin.html` — the review queue, served at `/admin`, unlocked with the admin key
 - `js/admin.js` — lists submissions and calls the review endpoint
 - `api/submit.js` — validates a game submission and saves it plus its cover image
@@ -54,7 +53,7 @@ Then visit http://localhost:4173.
 - `api/vote.js` — toggles an upvote on an approved game
 - `lib/votes.js` — one-per-person toggle storage, used by votes and crew "I'm in"
 - `crews.html` / `js/crews.js` — the crew board at `/crews`
-- `api/crews.js` — lists crew calls; `api/crew.js` — post and delete; `api/crew-in.js` — "I'm in"; `api/report.js` — report a call, admin clears reports
+- `api/crews.js` — lists crew calls; `api/crew.js` — post, delete, "I'm in", report, and clear reports, picked by `?action=`
 - `lib/crews.js` — crew storage, expiry, and the sweep
 - `vercel.json` — `cleanUrls` so `/submit.html` is reachable as `/submit`
 
@@ -62,10 +61,10 @@ Then visit http://localhost:4173.
 
 The form posts JSON (`{ email, role, website }`) to `/api/signup`, a Vercel function in `api/signup.js`. Each signup is stored as a private blob in the Vercel Blob store `friendslop-signups`, one file per email at `signups/<sha256 of the email>.json`, so signing up twice is a no-op. The `website` field is a hidden honeypot: if a bot fills it in, the function says thanks and saves nothing.
 
-To download the list, call `/api/signups` with the admin key. CSV by default, `?format=json` for JSON:
+To download the list, send a GET to `/api/signup` with the admin key. CSV by default, `?format=json` for JSON:
 
 ```bash
-curl -H "Authorization: Bearer $SIGNUP_ADMIN_KEY" https://friendslop.wtf/api/signups -o signups.csv
+curl -H "Authorization: Bearer $SIGNUP_ADMIN_KEY" https://friendslop.wtf/api/signup -o signups.csv
 ```
 
 The key is the `SIGNUP_ADMIN_KEY` environment variable on the Vercel project. `vercel env pull .env.local` copies it and the blob token into a local `.env.local`, which is gitignored.
@@ -147,11 +146,15 @@ Endpoints:
 - `GET /api/crews` lists open calls, newest first, cached 15 seconds. `?all=1` with the admin key includes expired ones.
 - `POST /api/crew` posts a call and returns a one-time `token`. The browser keeps it in localStorage so the poster gets a "Delete my call" button. Three open calls per poster (salted IP hash), then a 429.
 - `DELETE /api/crew?id=<id>&token=<token>` lets the poster remove it; the admin key works without a token.
-- `POST /api/crew-in` with `{ "id" }` toggles "I'm in", one per person per call, same mechanism as votes. Cards show `in/need` and flip to "probably full" when it's reached. It's a signal, not a reservation; the contact method is where the crew actually forms.
+- `POST /api/crew?action=in` with `{ "id" }` toggles "I'm in", one per person per call, same mechanism as votes. Cards show `in/need` and flip to "probably full" when it's reached. It's a signal, not a reservation; the contact method is where the crew actually forms.
 
-Every card that isn't yours has a small "report" link with a reason picker (spam, scam, harassment, not a real call, other) and an optional note. `POST /api/report` stores one report per person per call, same salted-IP mechanism as votes. At three reports the call disappears from the public board on its own. The admin Crews tab shows the count and the reasons, with "Clear reports" (`DELETE /api/report?id=` with the admin key) to put it back, or Delete to remove it.
+Every card that isn't yours has a small "report" link with a reason picker (spam, scam, harassment, not a real call, other) and an optional note. `POST /api/crew?action=report` stores one report per person per call, same salted-IP mechanism as votes. At three reports the call disappears from the public board on its own. The admin Crews tab shows the count and the reasons, with "Clear reports" (`DELETE /api/crew?id=<id>&action=reports` with the admin key) to put it back, or Delete to remove it.
 
 Contact details are public by design, that's the whole point of the board. Invite links must be full http(s) URLs and open in a new tab; usernames are shown as text with a copy button. The Crews tab on `/admin` lists every call, open or expired, with a delete button.
+
+## The 12-function limit
+
+Vercel's Hobby plan allows 12 serverless functions per deployment. Every file in `api/` is one function, so related actions share a file and pick their behaviour from `?action=` or the HTTP method. There are 10 right now. A deployment with 13 fails after the build with `exceeded_serverless_functions_per_deployment`, and production silently stays on the previous deployment, so check `vercel ls` after pushing if something new doesn't show up.
 
 ## Local development
 

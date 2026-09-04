@@ -186,7 +186,7 @@
 
   function clearReports(id) {
     say('Clearing reports...');
-    api('/api/report?id=' + encodeURIComponent(id), { method: 'DELETE' })
+    api('/api/crew?id=' + encodeURIComponent(id) + '&action=reports', { method: 'DELETE' })
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (!d.ok) { say(d.message || 'That did not work.'); return; }

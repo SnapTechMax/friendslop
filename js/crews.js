@@ -69,7 +69,7 @@
     btn.addEventListener('click', function () {
       if (btn.disabled) return;
       btn.disabled = true;
-      fetch('/api/crew-in', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: c.id }) })
+      fetch('/api/crew?action=in', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: c.id }) })
         .then(function (r) { return r.json(); })
         .then(function (d) {
           if (!d || !d.ok) { btn.classList.add('is-shake'); setTimeout(function () { btn.classList.remove('is-shake'); }, 400); return; }
@@ -110,7 +110,7 @@
     send.addEventListener('click', function () {
       send.disabled = true;
       status.textContent = 'Sending...';
-      fetch('/api/report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: c.id, reason: select.value, note: note.value.trim() }) })
+      fetch('/api/crew?action=report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: c.id, reason: select.value, note: note.value.trim() }) })
         .then(function (r) { return r.json(); })
         .then(function (d) {
           if (!d || !d.ok) { status.textContent = (d && d.message) || 'That did not work.'; send.disabled = false; return; }

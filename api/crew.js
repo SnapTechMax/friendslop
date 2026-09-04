@@ -1,12 +1,18 @@
-// POST   /api/crew  (json)  -> { ok, id, token, crew }   post a crew call
-// DELETE /api/crew?id=<id>&token=<token>                 poster removes their call
-// DELETE /api/crew?id=<id>  with the admin key            admin removes any call
+// One function for everything you can do to a crew call (Hobby plan caps
+// deployments at 12 functions, so related actions share one):
+//
+// POST   /api/crew                 (json) -> { ok, id, token, crew }   post a call
+// POST   /api/crew?action=in       { id } -> { ok, in, count }          toggle "I'm in"
+// POST   /api/crew?action=report   { id, reason, note? }               report a call
+// DELETE /api/crew?id=<id>&token=<token>                               poster removes their call
+// DELETE /api/crew?id=<id>                 with the admin key           admin removes any call
+// DELETE /api/crew?id=<id>&action=reports  with the admin key           admin clears its reports
 
 import { createHash, randomBytes } from 'node:crypto';
 import { isAdminKey, keyFromRequest } from '../lib/admin.js';
-import { CONTACT_TYPES, CREW_ID_RE, MAX_OPEN_PER_POSTER, PLATFORMS, WHEN, deleteCrew, isOpen, publicCrew, readAllCrews } from '../lib/crews.js';
+import { CONTACT_TYPES, CREW_ID_RE, IN_PREFIX, MAX_OPEN_PER_POSTER, PLATFORMS, REPORT_PREFIX, REPORT_REASONS, REPORT_THRESHOLD, WHEN, deleteCrew, isOpen, publicCrew, readAllCrews } from '../lib/crews.js';
 import { ID_RE, INDEX_PATH, readJson, writeJson } from '../lib/submissions.js';
-import { voterHash } from '../lib/votes.js';
+import { addVote, countVotesFor, deleteVotesFor, hasVoted, removeVote, voterHash } from '../lib/votes.js';
 
 const DISCORD_RE = /^[\w.#\- ]{2,40}$/;
 
@@ -29,8 +35,58 @@ function sha(s) {
   return createHash('sha256').update(s).digest('hex');
 }
 
+async function toggleIn(request, body) {
+  const id = String(body.id || '');
+  if (!CREW_ID_RE.test(id)) return json({ ok: false, message: 'Bad id.' }, 400);
+  try {
+    const crew = await readJson('crews/' + id + '.json');
+    if (!crew || !isOpen(crew)) return json({ ok: false, message: 'That crew call is gone.' }, 404);
+    if ((await countVotesFor(id, REPORT_PREFIX)) >= REPORT_THRESHOLD) return json({ ok: false, message: 'That crew call is gone.' }, 404);
+
+    const voter = voterHash(request);
+    let on;
+    if (await hasVoted(id, voter, IN_PREFIX)) {
+      await removeVote(id, voter, IN_PREFIX);
+      on = false;
+    } else {
+      await addVote(id, voter, IN_PREFIX);
+      on = true;
+    }
+    const count = await countVotesFor(id, IN_PREFIX);
+    return json({ ok: true, id, in: on, count });
+  } catch (err) {
+    console.error('crew-in failed', err);
+    return json({ ok: false, message: 'Something broke on our end. Try again in a bit.' }, 500);
+  }
+}
+
+async function report(request, body) {
+  const id = String(body.id || '');
+  const reason = String(body.reason || '');
+  const note = typeof body.note === 'string' ? body.note.trim().slice(0, 200) : '';
+  if (!CREW_ID_RE.test(id)) return json({ ok: false, message: 'Bad id.' }, 400);
+  if (!REPORT_REASONS.has(reason)) return json({ ok: false, message: 'Pick a reason.' }, 400);
+  try {
+    const crew = await readJson('crews/' + id + '.json');
+    if (!crew || !isOpen(crew)) return json({ ok: false, message: 'That crew call is gone.' }, 404);
+
+    const voter = voterHash(request);
+    const already = await hasVoted(id, voter, REPORT_PREFIX);
+    if (!already) await addVote(id, voter, REPORT_PREFIX, { reason, note });
+    const reports = await countVotesFor(id, REPORT_PREFIX);
+    return json({ ok: true, id, already, reports, hidden: reports >= REPORT_THRESHOLD });
+  } catch (err) {
+    console.error('report failed', err);
+    return json({ ok: false, message: 'Something broke on our end. Try again in a bit.' }, 500);
+  }
+}
+
 export async function POST(request) {
   const body = await request.json().catch(() => ({}));
+  const action = new URL(request.url).searchParams.get('action') || '';
+  if (action === 'in') return toggleIn(request, body);
+  if (action === 'report') return report(request, body);
+  if (action) return json({ ok: false, message: 'Unknown action.' }, 400);
 
   // Honeypot: hidden field, only bots fill it. Pretend it worked.
   if (str(body.website, 10)) return json({ ok: true, id: 'thanks', token: '', crew: null });
@@ -117,7 +173,20 @@ export async function DELETE(request) {
   const url = new URL(request.url);
   const id = url.searchParams.get('id') || '';
   const token = url.searchParams.get('token') || '';
+  const action = url.searchParams.get('action') || '';
   if (!CREW_ID_RE.test(id)) return json({ ok: false, message: 'Bad id.' }, 400);
+
+  if (action === 'reports') {
+    if (!isAdminKey(keyFromRequest(request))) return json({ ok: false, message: 'Nope.' }, 401);
+    try {
+      const cleared = await deleteVotesFor(id, REPORT_PREFIX);
+      return json({ ok: true, id, cleared });
+    } catch (err) {
+      console.error('clear reports failed', err);
+      return json({ ok: false, message: 'Something broke on our end.' }, 500);
+    }
+  }
+  if (action) return json({ ok: false, message: 'Unknown action.' }, 400);
 
   try {
     const crew = await readJson('crews/' + id + '.json');
