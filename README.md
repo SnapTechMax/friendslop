@@ -63,7 +63,7 @@ vercel dev
 
 ## Style notes
 
-The look borrows from gamerbf.com: Comic Sans, a cream page over a magenta/cyan/yellow background, thick ridge and double borders, hard black shadows, slightly rotated cards, a marquee, a green-on-black "system notice" box, and a hit counter. The copy is deadpan but explains what the site actually does.
+Geocities energy, on purpose: Comic Sans, a pale lilac page over a grape/lime striped background, acid lime, grape purple, tangerine and hot pink accents, deep plum ridge and double borders, hard shadows, slightly rotated cards, a marquee, an amber-on-black "lobby status" box, and a hit counter. The structure nods to gamerbf.com; the palette is its own. The copy is deadpan but explains what the site actually does.
 
 ## Deployment
 
