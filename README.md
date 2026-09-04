@@ -56,7 +56,7 @@ Then visit http://localhost:4173.
 - `api/auth.js` — register, login, logout, verify, reset, change password, OAuth start and callback
 - `lib/auth.js` — password hashing, sessions, cookies, one-time tokens, rate limits
 - `lib/oauth.js` — Discord, Google, and GitHub provider config and token exchange
-- `login.html` / `js/login.js`, `reset.html`, `verify.html` — the account pages
+- `login.html` / `js/login.js`, `profile.html` / `js/profile.js`, `reset.html`, `verify.html` — the account pages
 - `js/auth.js` — shared: who am I, the nav slot, and the "log in first" gate
 - `api/vote.js` — toggles an upvote on an approved game
 - `lib/votes.js` — one-per-person toggle storage, used by votes and crew "I'm in"
@@ -81,7 +81,11 @@ The key is the `SIGNUP_ADMIN_KEY` environment variable on the Vercel project. `v
 
 Posting a game, calling a crew, joining one, reporting one, and voting all need an account. Reading, the leaderboard, and the newsletter signup don't. Everything lives in `api/auth.js` behind `?action=`, with helpers in `lib/auth.js` and `lib/oauth.js`.
 
-**Email and password.** Sign up with a display name, an email, and a password of 8+ characters. Passwords are hashed with scrypt (N=2^15, r=8, p=1, 16-byte salt, 64-byte key) and compared in constant time. Sessions are random 256-bit tokens stored server-side under `sessions/<user>/`, hashed at rest, sent as an `HttpOnly; Secure; SameSite=Lax` cookie for 30 days. Every cookie-authenticated write must carry `X-Requested-With: fetch`, which a cross-site form can't add, so that's the CSRF check. Login is limited to 10 attempts per IP and email per 15 minutes; sign-ups to 10 per IP per hour. Email uniqueness is enforced by writing `emails/<sha256>.json` with overwrite disabled.
+**Usernames.** Every account has a unique username, 4 to 32 characters of letters, numbers, dots, dashes, and underscores, unique case-insensitively (`usernames/<lowercase>.json` is the claim, written with overwrite disabled). It's chosen at sign-up and changeable on `/profile`, five times a day, with a live availability check. Renaming rewrites the "by" name on the account's existing submissions and crew calls. Accounts created through OAuth get a provisional username from the provider's display name and are nudged to change it. A handful of names like admin, owner, and staff are reserved.
+
+**Roles.** A user record can carry `role: "owner"` or `role: "admin"`. Staff get a badge in the tab strip and on their profile, and `/admin` lets them in on their session (with the fetch header) instead of the key. The key still works. Roles are set by editing the user record; there's no UI for it.
+
+**Email and password.** Sign up with a username, an email, and a password of 8+ characters. Passwords are hashed with scrypt (N=2^15, r=8, p=1, 16-byte salt, 64-byte key) and compared in constant time. Sessions are random 256-bit tokens stored server-side under `sessions/<user>/`, hashed at rest, sent as an `HttpOnly; Secure; SameSite=Lax` cookie for 30 days. Every cookie-authenticated write must carry `X-Requested-With: fetch`, which a cross-site form can't add, so that's the CSRF check. Login is limited to 10 attempts per IP and email per 15 minutes; sign-ups to 10 per IP per hour. Email uniqueness is enforced by writing `emails/<sha256>.json` with overwrite disabled.
 
 **Verification and reset** go out through the same Resend setup as approval emails. Verification links last 24 hours, reset links one hour, both single-use. Resetting the password logs out every other session. Until `RESEND_API_KEY` and `MAIL_FROM` are set, new accounts are marked verified on creation (there is nothing to verify with) and the forgot-password form says so. Once mail is on, unverified accounts can log in but can't post until they click the link; "Resend" lives on `/login`.
 
@@ -97,7 +101,7 @@ Create the app in the provider's developer console (Discord Developer Portal, Go
 
 `SITE_URL` (default `https://friendslop.wtf`) is the base for email links and OAuth redirect URIs.
 
-**Pages:** `/login` (log in, sign up, forgot password, and the account card with log out, log out everywhere, change password, resend verification), `/verify?token=`, `/reset?token=`. The tab strip shows "Log in" or your name and a "Log out" button.
+**Pages:** `/login` (log in, sign up, forgot password), `/profile` (username, email status and resend, change password, log out, log out everywhere, and a link to the back room for staff), `/verify?token=`, `/reset?token=`. The tab strip shows "Log in" or your username linking to the profile, plus a role badge for staff.
 
 **What it changes elsewhere.** Submissions take the contact email from the account and record who posted. Crew calls belong to the account (no more delete tokens), the three-open-calls limit and the first-post hold are per account, and "by name" shows on the card. Votes, "I'm in", and reports are one per account instead of one per IP, so shared networks no longer collide. `VOTE_SALT` is no longer used.
 

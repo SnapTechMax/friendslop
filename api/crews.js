@@ -2,7 +2,7 @@
 // GET /api/crews?mine=1   -> the logged-in account's own open calls, held or not (never cached)
 // GET /api/crews?all=1    -> every call including expired and held, admin key required
 
-import { isAdminKey, keyFromRequest } from '../lib/admin.js';
+import { isAdminRequest } from '../lib/admin.js';
 import { isHeld, isOpen, publicCrew, readAllCrews, readReports, sweepExpired, withInCounts } from '../lib/crews.js';
 import { getUser } from '../lib/auth.js';
 
@@ -10,7 +10,7 @@ export async function GET(request) {
   const url = new URL(request.url);
   const wantAll = url.searchParams.get('all') === '1';
   const wantMine = url.searchParams.get('mine') === '1';
-  if (wantAll && !isAdminKey(keyFromRequest(request))) {
+  if (wantAll && !(await isAdminRequest(request))) {
     return new Response('Nope.', { status: 401, headers: { 'Cache-Control': 'no-store' } });
   }
 

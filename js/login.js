@@ -59,7 +59,7 @@
 
   function afterLogin(d) {
     if (d.verificationRequired && !d.verificationSent) status.textContent = 'Account made, but the verification email could not be sent. Try resending from your account.';
-    location.href = d.user && !d.user.emailVerified ? '/login?verify=1&next=' + encodeURIComponent(next) : next;
+    location.href = d.user && !d.user.emailVerified ? '/profile?verify=1' : next;
   }
 
   panes.login.addEventListener('submit', function (ev) {
@@ -98,31 +98,9 @@
     row.hidden = false;
   }).catch(function () {});
 
-  // Already logged in? Show the account card instead of the forms.
+  // Already logged in? There's nothing to do here; go to the profile (or wherever they were headed).
   A.me().then(function (user) {
     if (!user) return;
-    authCard.hidden = true;
-    acct.hidden = false;
-    document.getElementById('acct-name').textContent = user.name;
-    document.getElementById('acct-line').textContent = user.email + (user.emailVerified ? ' · verified' : ' · not verified') + (user.providers.length ? ' · signs in with ' + user.providers.join(', ') : '');
-    document.getElementById('acct-verify').hidden = user.emailVerified;
-    document.getElementById('acct-next').setAttribute('href', next);
-    document.getElementById('current-field').hidden = !user.hasPassword;
-    if (params.get('verify') === '1' && !user.emailVerified) notice.textContent = 'Check your inbox for the verification link. Then come back and carry on.';
-    document.getElementById('acct-resend').addEventListener('click', function (ev) {
-      ev.target.disabled = true;
-      A.post('resend-verification').then(function (d) { ev.target.textContent = d.message || 'Sent.'; });
-    });
-    document.getElementById('acct-logout').addEventListener('click', function () { A.post('logout').then(function () { location.href = '/'; }); });
-    document.getElementById('acct-logout-all').addEventListener('click', function () { A.post('logout-all').then(function () { location.href = '/'; }); });
-    var pf = document.getElementById('password-form');
-    pf.addEventListener('submit', function (ev) {
-      ev.preventDefault(); clearErrors(pf);
-      var ps = document.getElementById('password-status'); ps.textContent = 'Changing...';
-      A.post('change-password', vals(pf)).then(function (d) {
-        if (d.ok) { ps.textContent = 'Changed. Other devices are logged out.'; pf.reset(); return; }
-        showErrors(pf, d.errors); ps.textContent = d.message || 'That did not work.';
-      });
-    });
+    location.replace(params.get('verify') === '1' ? '/profile?verify=1' : (params.get('next') ? next : '/profile'));
   });
 })();

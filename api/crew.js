@@ -9,7 +9,7 @@
 // DELETE /api/crew?id=<id>&action=reports  with the admin key           admin clears its reports
 
 import { randomBytes } from 'node:crypto';
-import { isAdminKey, keyFromRequest } from '../lib/admin.js';
+import { isAdminRequest } from '../lib/admin.js';
 import { getUser, hasFetchHeader, requireUser } from '../lib/auth.js';
 import { CONTACT_TYPES, CREW_ID_RE, HOLD_MINUTES, IN_PREFIX, MAX_OPEN_PER_POSTER, PLATFORMS, REPORT_PREFIX, REPORT_REASONS, REPORT_THRESHOLD, WHEN, deleteCrew, isHeld, isOpen, posterPath, publicCrew, readAllCrews } from '../lib/crews.js';
 import { ID_RE, INDEX_PATH, readJson, writeJson } from '../lib/submissions.js';
@@ -84,7 +84,7 @@ async function report(request, body) {
 }
 
 async function release(request, body) {
-  if (!isAdminKey(keyFromRequest(request))) return json({ ok: false, message: 'Nope.' }, 401);
+  if (!(await isAdminRequest(request))) return json({ ok: false, message: 'Nope.' }, 401);
   const id = String(body.id || '');
   if (!CREW_ID_RE.test(id)) return json({ ok: false, message: 'Bad id.' }, 400);
   try {
@@ -183,7 +183,7 @@ export async function POST(request) {
       contact,
       note,
       userId: user.id,
-      userName: user.name,
+      userName: user.username,
       createdAt: now.toISOString(),
       expiresAt: new Date(now.getTime() + WHEN[when].ttlHours * 3600 * 1000).toISOString()
     };
@@ -205,7 +205,7 @@ export async function DELETE(request) {
   if (!CREW_ID_RE.test(id)) return json({ ok: false, message: 'Bad id.' }, 400);
 
   if (action === 'reports') {
-    if (!isAdminKey(keyFromRequest(request))) return json({ ok: false, message: 'Nope.' }, 401);
+    if (!(await isAdminRequest(request))) return json({ ok: false, message: 'Nope.' }, 401);
     try {
       const cleared = await deleteVotesFor(id, REPORT_PREFIX);
       return json({ ok: true, id, cleared });
@@ -220,7 +220,7 @@ export async function DELETE(request) {
     const crew = await readJson('crews/' + id + '.json');
     if (!crew) return json({ ok: false, message: 'No crew call with that id.' }, 404);
 
-    const admin = isAdminKey(keyFromRequest(request));
+    const admin = await isAdminRequest(request);
     let owner = false;
     if (!admin && hasFetchHeader(request)) {
       const auth = await getUser(request);

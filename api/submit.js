@@ -108,7 +108,7 @@ export async function POST(request) {
       devName,
       email,
       userId: user.id,
-      userName: user.name,
+      userName: user.username,
       onBehalf,
       credit: onBehalf ? credit : '',
       cover: coverPath,

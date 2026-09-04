@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Profile — friendslop.wtf</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="site-bg" aria-hidden="true"></div>
+
+  <marquee class="ticker" scrollamount="10">YOUR PROFILE 🎮 &nbsp;&nbsp;|&nbsp;&nbsp; PICK A USERNAME. NO DUPLICATES. FOUR TO THIRTY-TWO CHARACTERS &nbsp;&nbsp;|&nbsp;&nbsp; 🚧 THIS IS THE ONLY SETTINGS PAGE. ENJOY 🚧</marquee>
+
+  <nav class="site-nav" aria-label="Site">
+    <a href="/">Front page</a>
+    <a href="/top">Top Slop</a>
+    <a href="/submit">Post a Game</a>
+    <a href="/crews">Find a Crew</a>
+    <span class="nav-user" id="nav-user"></span>
+  </nav>
+
+  <div class="container">
+    <h1 class="wordart wordart-small">your <span>profile</span></h1>
+
+    <section id="profile-gate" class="card card-tilt-r gate-card" hidden></section>
+
+    <section id="profile" class="hero profile-layout" hidden>
+      <div class="card card-tilt-r">
+        <span class="badge" id="role-badge">Member™</span>
+        <h2 id="p-username">you</h2>
+        <div id="auth-notice" class="signup-status" role="status" aria-live="polite"></div>
+
+        <form id="username-form" novalidate>
+          <label class="field">
+            Username
+            <input name="username" id="u-input" type="text" minlength="4" maxlength="32" autocomplete="username" required>
+            <span class="hint">Shown on everything you post. 4 to 32 characters: letters, numbers, dots, dashes, underscores. Has to be unique.</span>
+            <span class="hint avail" id="u-avail"></span>
+            <span class="field-error" data-for="username"></span>
+          </label>
+          <button type="submit" class="cta cta-small">Save username</button>
+          <span id="u-status" class="signup-status inline-status"></span>
+        </form>
+
+        <p class="meta profile-meta" id="p-email"></p>
+        <div id="p-verify" hidden>
+          <p>Your email isn't verified yet. That's what unlocks posting.</p>
+          <button type="button" class="cta cta-small" id="p-resend">Resend the email</button>
+        </div>
+
+        <details class="acct-details">
+          <summary><b>Change password</b></summary>
+          <form id="password-form" novalidate>
+            <label class="field" id="current-field">Current password <input name="current" type="password" autocomplete="current-password"><span class="field-error" data-for="current"></span></label>
+            <label class="field">New password <input name="next" type="password" autocomplete="new-password" minlength="8" required><span class="field-error" data-for="next"></span></label>
+            <button type="submit" class="cta cta-small">Change it</button>
+            <div id="password-status" class="signup-status"></div>
+          </form>
+        </details>
+
+        <div class="review-actions profile-actions">
+          <button type="button" class="cta cta-small cta-alt" id="p-logout">Log out</button>
+          <button type="button" class="cta cta-small" id="p-logout-all" title="Ends every session on every device">Log out everywhere</button>
+        </div>
+      </div>
+
+      <aside class="card card-tilt-l card-side">
+        <div class="terminal">
+          <b>&gt;&gt; ACCOUNT STATUS &lt;&lt;</b><br>
+          Role: <span id="t-role">member</span><br>
+          Email: <span id="t-verified">?</span><br>
+          Signs in with: <span id="t-providers">password</span><br>
+          Member since: <span id="t-since">?</span>
+        </div>
+        <div class="aside-block" id="staff-block" hidden>
+          <h4 class="col-title">Staff</h4>
+          <p class="meta">You can review the queue and moderate the crew board.</p>
+          <a class="cta cta-small" href="/admin">Open the back room</a>
+        </div>
+      </aside>
+    </section>
+
+    <p class="fineprint">© 2026 friendslop.wtf — Made with friends. Be decent in lobbies.</p>
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script src="js/profile.js"></script>
+</body>
+</html>

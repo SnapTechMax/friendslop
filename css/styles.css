@@ -160,7 +160,9 @@ p, li { max-width: 80ch; }
 }
 
 .nav-logout { background: var(--panel-strong); }
-.nav-name { background: var(--lime); border: 3px solid var(--line); padding: 2px 8px; }
+.nav-name { background: var(--lime); border: 3px solid var(--line); padding: 2px 8px; color: var(--ink); text-decoration: none; }
+.nav-name:hover { background: var(--lime-soft); }
+.nav-role { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; background: var(--amber); border: 2px solid var(--line); padding: 1px 6px; }
 .nav-unverified { font-size: 12px; color: #c4003f; text-decoration: underline dotted; }
 
 /* Title */
@@ -855,6 +857,13 @@ p, li { max-width: 80ch; }
 .gate-card .cta { margin-right: 8px; }
 .posting-as { font-size: 14px; background: var(--lime-soft); border: 3px dashed var(--line); padding: 8px 10px; margin: 0 0 12px; }
 
+.profile-layout { grid-template-columns: 1.2fr 0.8fr; }
+.profile-meta { margin: 14px 0 6px; font-size: 15px; }
+.profile-actions { margin-top: 14px; }
+.inline-status { display: inline-block; margin-left: 10px; }
+.avail-ok { color: #1a7f2e; font-weight: 700; }
+.avail-bad { color: #c4003f; font-weight: 700; }
+
 /* The back room */
 .key-card { max-width: 520px; margin: 26px auto 0; }
 
@@ -977,7 +986,7 @@ p, li { max-width: 80ch; }
   .hero, .two-col, .submit-layout { grid-template-columns: 1fr; }
   .field-row { grid-template-columns: 1fr; gap: 0; }
   .review-grid { grid-template-columns: 1fr; }
-  .crews-layout { grid-template-columns: 1fr; }
+  .crews-layout, .profile-layout { grid-template-columns: 1fr; }
   .podium { grid-template-columns: 1fr; }
   .podium-1, .podium-3 { transform: none; }
   .lb-row { grid-template-columns: 60px 1fr; }

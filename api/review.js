@@ -4,7 +4,7 @@
 // Approving emails the dev once (or again when notify is true).
 
 import { del, list } from '@vercel/blob';
-import { isAdminKey, keyFromRequest } from '../lib/admin.js';
+import { isAdminRequest } from '../lib/admin.js';
 import { sendApprovalEmail } from '../lib/mail.js';
 import { ID_RE, STATUSES, readJson, writeJson, rebuildApprovedIndex } from '../lib/submissions.js';
 import { deleteVotesFor } from '../lib/votes.js';
@@ -14,7 +14,7 @@ function json(body, status = 200) {
 }
 
 export async function POST(request) {
-  if (!isAdminKey(keyFromRequest(request))) return json({ ok: false, message: 'Nope.' }, 401);
+  if (!(await isAdminRequest(request))) return json({ ok: false, message: 'Nope.' }, 401);
 
   const body = await request.json().catch(() => ({}));
   const id = String(body.id || '');
@@ -59,7 +59,7 @@ export async function POST(request) {
 }
 
 export async function DELETE(request) {
-  if (!isAdminKey(keyFromRequest(request))) return json({ ok: false, message: 'Nope.' }, 401);
+  if (!(await isAdminRequest(request))) return json({ ok: false, message: 'Nope.' }, 401);
 
   const id = new URL(request.url).searchParams.get('id') || '';
   if (!ID_RE.test(id)) return json({ ok: false, message: 'Bad id.' }, 400);

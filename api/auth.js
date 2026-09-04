@@ -2,7 +2,9 @@
 //
 // GET  ?action=me                      -> { user } or { user: null }
 // GET  ?action=providers               -> { providers: [...], mailEnabled }
-// POST ?action=register                { email, password, name }
+// POST ?action=register                { email, password, username }
+// GET  ?action=username-available&u=   -> { available }
+// POST ?action=set-username            { username }   (logged in)
 // POST ?action=login                   { email, password }
 // POST ?action=logout                  ends this session
 // POST ?action=logout-all              ends every session for the account
@@ -16,14 +18,15 @@
 
 import { createHash, randomBytes } from 'node:crypto';
 import {
-  EMAIL_RE, NAME_RE, claimEmail, clearSessionCookie, clientIp, consumeToken, cookieHeader, createSession,
-  destroyAllSessions, destroySession, emailPath, findUserByEmail, getUser, hashPassword, hasFetchHeader, issueToken,
-  newId, normEmail, oauthPath, parseCookies, passwordProblem, publicUser, safeNext, saveUser, sessionCookie, siteUrl,
-  underLimit, userPath, verifyPassword
+  EMAIL_RE, claimEmail, claimUsername, clearSessionCookie, clientIp, consumeToken, cookieHeader, createSession,
+  destroyAllSessions, destroySession, findUserByEmail, getUser, hashPassword, hasFetchHeader, issueToken,
+  newId, normEmail, oauthPath, parseCookies, passwordProblem, pickUsername, publicUser, releaseUsername, safeNext,
+  saveUser, sessionCookie, siteUrl, underLimit, usernameProblem, usernameTaken, userPath, verifyPassword
 } from '../lib/auth.js';
+import { readAllCrews } from '../lib/crews.js';
 import { mailEnabled, resetEmail, sendMail, verificationEmail } from '../lib/mail.js';
 import { PROVIDERS, enabledProviders, exchangeCode, providerCreds, redirectUri } from '../lib/oauth.js';
-import { readJson, writeJson } from '../lib/submissions.js';
+import { readAllSubmissions, readJson, writeJson } from '../lib/submissions.js';
 
 const OAUTH_COOKIE = 'fs_oauth';
 
@@ -47,13 +50,14 @@ async function sendVerification(request, user) {
 async function register(request, body) {
   const email = normEmail(body.email);
   const password = typeof body.password === 'string' ? body.password : '';
-  const name = String(body.name || '').trim().replace(/\s+/g, ' ');
+  const username = String(body.username || '').trim();
 
   const errors = {};
   if (!EMAIL_RE.test(email) || email.length > 254) errors.email = 'That does not look like an email address.';
   const pw = passwordProblem(password, email);
   if (pw) errors.password = pw;
-  if (!NAME_RE.test(name)) errors.name = 'Name: 2 to 30 letters, numbers, spaces, or . _ - \'';
+  const up = usernameProblem(username);
+  if (up) errors.username = up;
   if (Object.keys(errors).length) return json({ ok: false, message: 'Fix the marked fields.', errors }, 400);
 
   if (!(await underLimit('register', clientIp(request), 10, 3600))) {
@@ -61,7 +65,11 @@ async function register(request, body) {
   }
 
   const id = newId('u');
+  if (!(await claimUsername(username, id))) {
+    return json({ ok: false, message: 'That username is taken.', errors: { username: 'Taken. Try another.' } }, 409);
+  }
   if (!(await claimEmail(email, id))) {
+    await releaseUsername(username);
     return json({ ok: false, message: 'That email already has an account. Log in, or reset the password.', errors: { email: 'Already registered.' } }, 409);
   }
 
@@ -69,7 +77,7 @@ async function register(request, body) {
     id,
     email,
     emailVerified: !mailEnabled(), // no mail service means nothing to verify with, so trust it
-    name,
+    username,
     passwordHash: await hashPassword(password),
     providers: {},
     createdAt: new Date().toISOString()
@@ -181,6 +189,48 @@ async function changePassword(request, body) {
   return json({ ok: true, user: publicUser(auth.user) }, 200, { 'Set-Cookie': cookie });
 }
 
+// ---- usernames ----
+
+async function usernameAvailable(request, url) {
+  const u = String(url.searchParams.get('u') || '').trim();
+  const problem = usernameProblem(u);
+  if (problem) return json({ available: false, message: problem });
+  const auth = await getUser(request);
+  if (auth && auth.user.username && auth.user.username.toLowerCase() === u.toLowerCase()) return json({ available: true, message: "That's you." });
+  const taken = await usernameTaken(u);
+  return json({ available: !taken, message: taken ? 'Taken.' : 'Free.' });
+}
+
+async function setUsername(request, body) {
+  const auth = await getUser(request);
+  if (!auth) return json({ ok: false, message: 'Log in first.' }, 401);
+  const username = String(body.username || '').trim();
+  const problem = usernameProblem(username);
+  if (problem) return json({ ok: false, message: problem, errors: { username: problem } }, 400);
+  if (!(await underLimit('rename', auth.user.id, 5, 24 * 3600))) return json({ ok: false, message: 'Five renames a day is plenty.' }, 429);
+
+  const user = auth.user;
+  const old = user.username || '';
+  if (old.toLowerCase() !== username.toLowerCase()) {
+    if (!(await claimUsername(username, user.id))) return json({ ok: false, message: 'That username is taken.', errors: { username: 'Taken. Try another.' } }, 409);
+    if (old) await releaseUsername(old);
+  } else if (old !== username) {
+    // Same name, different capitalisation: the claim already belongs to them.
+    await writeJson('usernames/' + username.toLowerCase() + '.json', { userId: user.id, username });
+  }
+  user.username = username;
+  delete user.usernameProvisional;
+  await saveUser(user);
+
+  // Keep "by <name>" fresh on what they've already posted.
+  try {
+    for (const c of (await readAllCrews()).filter((c) => c.userId === user.id)) { c.userName = username; await writeJson('crews/' + c.id + '.json', c); }
+    for (const r of (await readAllSubmissions()).filter((r) => r.userId === user.id)) { r.userName = username; await writeJson('submissions/' + r.id + '.json', r); }
+  } catch (err) { console.error('rename propagation failed', err); }
+
+  return json({ ok: true, user: publicUser(user) });
+}
+
 // ---- OAuth2, authorization code + PKCE ----
 
 function b64url(buf) { return buf.toString('base64url'); }
@@ -250,8 +300,8 @@ async function oauthCallback(request, url) {
     if (!user) {
       const id = newId('u');
       if (!(await claimEmail(email, id))) return fail('race');
-      const name = String(profile.name || '').trim().replace(/\s+/g, ' ').slice(0, 30);
-      user = { id, email, emailVerified: true, name: NAME_RE.test(name) ? name : 'player ' + id.slice(-4), passwordHash: null, providers: {}, createdAt: now };
+      const username = await pickUsername(profile.name, id);
+      user = { id, email, emailVerified: true, username, usernameProvisional: true, passwordHash: null, providers: {}, createdAt: now };
     } else if (!user.emailVerified) {
       user.emailVerified = true;
       user.emailVerifiedAt = now;
@@ -283,6 +333,7 @@ export async function GET(request) {
     if (action === 'providers') {
       return json({ providers: enabledProviders().map((k) => ({ id: k, label: PROVIDERS[k].label })), mailEnabled: mailEnabled() }, 200, { 'Cache-Control': 'public, s-maxage=60' });
     }
+    if (action === 'username-available') return usernameAvailable(request, url);
     if (action === 'oauth') return oauthStart(request, url);
     if (action === 'callback') return oauthCallback(request, url);
     return json({ ok: false, message: 'Unknown action.' }, 404);
@@ -308,6 +359,7 @@ export async function POST(request) {
       case 'forgot': return await forgot(request, body);
       case 'reset': return await reset(request, body);
       case 'change-password': return await changePassword(request, body);
+      case 'set-username': return await setUsername(request, body);
       default: return json({ ok: false, message: 'Unknown action.' }, 404);
     }
   } catch (err) {

@@ -2,7 +2,7 @@
 // GET /api/submissions?format=csv  -> flat CSV
 // Requires the admin key: "Authorization: Bearer <key>" or "?key=<key>".
 
-import { isAdminKey, keyFromRequest } from '../lib/admin.js';
+import { isAdminRequest } from '../lib/admin.js';
 import { readAllSubmissions } from '../lib/submissions.js';
 import { countAllVotes } from '../lib/votes.js';
 
@@ -12,7 +12,7 @@ function csvCell(value) {
 }
 
 export async function GET(request) {
-  if (!isAdminKey(keyFromRequest(request))) {
+  if (!(await isAdminRequest(request))) {
     return new Response('Nope.', { status: 401, headers: { 'Cache-Control': 'no-store' } });
   }
 

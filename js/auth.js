@@ -47,8 +47,9 @@
       slot.appendChild(el('a', { href: loginUrl(), class: 'nav-login', text: 'Log in' }));
       return;
     }
-    slot.appendChild(el('span', { class: 'nav-name', text: user.name }));
-    if (!user.emailVerified) slot.appendChild(el('a', { href: '/login?verify=1', class: 'nav-unverified', title: 'Email not verified yet', text: 'unverified' }));
+    slot.appendChild(el('a', { class: 'nav-name', href: '/profile', title: 'Your profile', text: user.username }));
+    if (user.role === 'owner' || user.role === 'admin') slot.appendChild(el('span', { class: 'nav-role', text: user.role }));
+    if (!user.emailVerified) slot.appendChild(el('a', { href: '/profile?verify=1', class: 'nav-unverified', title: 'Email not verified yet', text: 'unverified' }));
     slot.appendChild(el('button', { type: 'button', class: 'nav-logout', text: 'Log out', onclick: function () {
       post('logout').then(function () { location.reload(); });
     } }));
@@ -65,7 +66,7 @@
         if (user && !user.emailVerified) {
           gateEl.appendChild(el('span', { class: 'badge', text: 'One more step™' }));
           gateEl.appendChild(el('h2', { text: 'Verify your email' }));
-          gateEl.appendChild(el('p', { text: 'You are logged in as ' + user.name + ', but the email is not verified yet, and that is what unlocks ' + what + '. Check your inbox.' }));
+          gateEl.appendChild(el('p', { text: 'You are logged in as ' + user.username + ', but the email is not verified yet, and that is what unlocks ' + what + '. Check your inbox.' }));
           gateEl.appendChild(el('button', { type: 'button', class: 'cta', text: 'Resend the email', onclick: function (ev) {
             ev.target.disabled = true;
             post('resend-verification').then(function (d) { ev.target.textContent = d.message || 'Sent.'; });

@@ -47,11 +47,13 @@
 
   function api(path, options) {
     options = options || {};
-    options.headers = Object.assign({ Authorization: 'Bearer ' + key }, options.headers || {});
+    var base = { 'X-Requested-With': 'fetch' };
+    if (key) base.Authorization = 'Bearer ' + key;
+    options.headers = Object.assign(base, options.headers || {});
     return fetch(path, options).then(function (res) {
       if (res.status === 401) {
         forgetKey();
-        keyStatus.textContent = 'That key did not work.';
+        keyStatus.textContent = key ? 'That key did not work.' : 'Log in as staff, or paste the admin key.';
         throw new Error('unauthorized');
       }
       return res;
@@ -313,7 +315,10 @@
     });
   });
 
-  // Remembered key from last time
+  // Staff accounts walk straight in; everyone else needs the key (remembered from last time).
   try { key = localStorage.getItem(KEY_STORAGE) || ''; } catch (e) { key = ''; }
-  if (key) load();
+  window.fsAuth.me().then(function (user) {
+    if (user && (user.role === 'owner' || user.role === 'admin')) { key = ''; load(); return; }
+    if (key) load();
+  });
 })();

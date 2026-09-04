@@ -4,7 +4,7 @@
 
 import { createHash } from 'node:crypto';
 import { get, list, put } from '@vercel/blob';
-import { isAdminKey, keyFromRequest } from '../lib/admin.js';
+import { isAdminRequest } from '../lib/admin.js';
 
 const ROLES = new Set(['dev', 'player', 'both']);
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -63,7 +63,7 @@ function csvCell(value) {
 }
 
 export async function GET(request) {
-  if (!isAdminKey(keyFromRequest(request))) {
+  if (!(await isAdminRequest(request))) {
     return new Response('Nope.', { status: 401, headers: { 'Cache-Control': 'no-store' } });
   }
   try {

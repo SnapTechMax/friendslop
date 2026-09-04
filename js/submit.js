@@ -9,7 +9,7 @@
   var user = null;
   window.fsAuth.gate(document.getElementById('submit-section'), document.getElementById('submit-gate'), 'post a game').then(function (u) {
     user = u;
-    if (u) document.getElementById('posting-as').textContent = 'Posting as ' + u.name + '. We will email ' + u.email + ' when it goes up.';
+    if (u) document.getElementById('posting-as').textContent = 'Posting as ' + u.username + '. We will email ' + u.email + ' when it goes up.';
   });
 
   var status = document.getElementById('submit-status');

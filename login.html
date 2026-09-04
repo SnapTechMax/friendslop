@@ -59,10 +59,10 @@
 
       <form id="signup-form" class="auth-pane" hidden novalidate>
         <label class="field">
-          What should we call you
-          <input name="name" type="text" autocomplete="nickname" maxlength="30" required placeholder="dave, or DaveDoesPhysics, or dave (real)">
-          <span class="hint">Shown next to what you post. 2 to 30 characters.</span>
-          <span class="field-error" data-for="name"></span>
+          Username
+          <input name="username" type="text" autocomplete="username" minlength="4" maxlength="32" required placeholder="DaveDoesPhysics">
+          <span class="hint">Shown on everything you post. 4 to 32 characters: letters, numbers, dots, dashes, underscores. Has to be unique. You can change it later on your profile.</span>
+          <span class="field-error" data-for="username"></span>
         </label>
         <label class="field">
           Email
@@ -92,30 +92,6 @@
       </form>
 
       <div id="auth-status" class="signup-status" role="status" aria-live="polite"></div>
-    </section>
-
-    <section id="account-card" class="card card-tilt-l auth-card" hidden>
-      <span class="badge">Logged In™</span>
-      <h2 id="acct-name">You</h2>
-      <p id="acct-line"></p>
-      <div id="acct-verify" hidden>
-        <p>Your email isn't verified yet. That's what unlocks posting.</p>
-        <button type="button" class="cta" id="acct-resend">Resend the email</button>
-      </div>
-      <div class="review-actions">
-        <a class="cta cta-small" id="acct-next" href="/">Carry on</a>
-        <button type="button" class="cta cta-small cta-alt" id="acct-logout">Log out</button>
-        <button type="button" class="cta cta-small" id="acct-logout-all" title="Ends every session on every device">Log out everywhere</button>
-      </div>
-      <details class="acct-details">
-        <summary><b>Change password</b></summary>
-        <form id="password-form" novalidate>
-          <label class="field" id="current-field">Current password <input name="current" type="password" autocomplete="current-password"><span class="field-error" data-for="current"></span></label>
-          <label class="field">New password <input name="next" type="password" autocomplete="new-password" minlength="8" required><span class="field-error" data-for="next"></span></label>
-          <button type="submit" class="cta cta-small">Change it</button>
-          <div id="password-status" class="signup-status"></div>
-        </form>
-      </details>
     </section>
 
     <p class="fineprint">© 2026 friendslop.wtf — Made with friends. Be decent in lobbies.</p>
